@@ -3,7 +3,7 @@
 # Usage: ./deploy.sh
 
 AWS=~/.local/bin/aws
-BUCKET=agentiz-organization
+BUCKET=agentiz
 REGION=us-east-1
 
 echo "Deploying to s3://$BUCKET ..."
