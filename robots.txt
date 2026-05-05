@@ -51,14 +51,3 @@ Disallow: /
 
 User-agent: *
 Allow: /
-Disallow: /api/
-Disallow: /bare/
-Disallow: /baremux/
-Disallow: /scram/
-Disallow: /scramjet/
-Disallow: /uv/
-Disallow: /libcurl/
-Disallow: /epoxy/
-Disallow: /realtime
-Disallow: /wisp/
-Disallow: /debug/
