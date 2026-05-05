@@ -1,42 +1,98 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="referrer" content="no-referrer" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="theme-color" content="#0d0d0d" />
-    <title>Agentiz</title>
-    <meta name="description" content="Agentiz — your student workspace." />
-    <meta name="keywords" content="student tools, learning resources, educational platform" />
-    <meta name="author" content="Agentiz" />
-    <meta name="robots" content="index,follow" />
-    
-    
-    <meta name="rating" content="general" />
-    <meta name="content-type" content="education" />
-    <meta property="og:title" content="Agentiz" />
-    <meta property="og:description" content="Student workspace" />
-    <meta property="og:site_name" content="Agentiz" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Agentiz" />
-    <meta name="twitter:description" content="Student workspace" />
-    <link id="app-favicon" rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="manifest" href="/manifest.json" />
-    <script>
-      (function(){try{var P={'default':{t:'Agentiz',f:'/favicon.ico',tp:'image/x-icon'},google:{t:'Google',f:'https://www.google.com/favicon.ico',tp:'image/x-icon'},gclass:{t:'Classes',f:'https://ssl.gstatic.com/classroom/favicon.png',tp:'image/png'},clever:{t:'Clever | Portal',f:'https://clever.com/favicon.ico',tp:'image/x-icon'},canvas:{t:'Dashboard',f:'https://du11hjcvx0uqb.cloudfront.net/dist/images/favicon-e10d657a73.ico',tp:'image/x-icon'},blank:{t:'\u200B',f:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E',tp:'image/svg+xml'}};window.__agCloakPresets=P;var g=function(){var id=localStorage.getItem('agentiz_cloak')||'default';return P[id]||P['default']};var bc=function(p){try{if(window.parent&&window.parent!==window){var h=p.f;if(h&&h.charAt(0)==='/')h=location.origin+h;window.parent.postMessage({__koop:'cloak',title:p.t,favicon:h},'*')}}catch(_){}};var f=g();document.title=f.t;var bl=document.getElementById('app-favicon')||document.querySelector("link[rel~='icon']");if(bl){bl.href=f.f;bl.type=f.tp||'image/x-icon'}bc(f);var rp=false;var ra=function(){if(rp)return;rp=true;try{var p=g();if(document.title!==p.t)document.title=p.t;var lk=document.querySelector("link[rel~='icon']");if(lk&&lk.href.indexOf(p.f)===-1&&lk.getAttribute('href')!==p.f){lk.href=p.f;lk.type=p.tp||'image/x-icon'}bc(p)}finally{rp=false}};window.__agApplyCloak=ra;var mo=new MutationObserver(ra);var st=function(){if(document.head)mo.observe(document.head,{childList:true,subtree:true});if(document.querySelector('title'))mo.observe(document.querySelector('title'),{childList:true});setInterval(ra,2000);window.addEventListener('storage',function(e){if(!e||e.key==='agentiz_cloak'||e.key===null)ra()});window.addEventListener('agentiz:cloak-changed',ra)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',st);else st()}catch(e){}})();
-    </script>
-  <script type="module" crossorigin src="/assets/index-BI90YYn0.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-Dvrxj_Zk.js">
-  <link rel="stylesheet" crossorigin href="/assets/index-maugozOS.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d0d0d" />
+  <title>Agentiz — Student Workspace</title>
+  <meta name="description" content="Agentiz is a student productivity workspace for managing study resources, notes, and learning tools in one place." />
+  <meta name="keywords" content="student workspace, study tools, learning resources, productivity, notes, homework helper" />
+  <meta name="author" content="Agentiz" />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:title" content="Agentiz — Student Workspace" />
+  <meta property="og:description" content="Your all-in-one student productivity workspace." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Agentiz — Student Workspace" />
+  <link rel="manifest" href="/manifest.json" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0a; --surface: #111111; --border: #222222;
+      --silver: #c0c0c0; --silver-dim: #888888; --white: #f0f0f0;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--white); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; z-index: 0; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; height: 56px; background: rgba(10,10,10,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    .nav-logo { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.08em; color: var(--silver); text-transform: uppercase; }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a { color: var(--silver-dim); text-decoration: none; font-size: 0.85rem; letter-spacing: 0.04em; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--silver); }
+    main { flex: 1; position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+    .hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 7rem 1.5rem 5rem; max-width: 680px; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.9rem; border: 1px solid var(--border); border-radius: 100px; font-size: 0.75rem; color: var(--silver-dim); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--silver); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    h1 { font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; color: var(--white); margin-bottom: 1.25rem; }
+    h1 span { background: linear-gradient(135deg, var(--silver) 0%, #888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-sub { font-size: 1.1rem; color: var(--silver-dim); line-height: 1.6; max-width: 480px; margin-bottom: 2.5rem; }
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.75rem; background: var(--silver); color: #000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.04em; border-radius: 6px; text-decoration: none; transition: background 0.2s, transform 0.15s; }
+    .btn-primary:hover { background: var(--white); transform: translateY(-1px); }
+    .btn-secondary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.75rem; border: 1px solid var(--border); color: var(--silver-dim); font-size: 0.9rem; border-radius: 6px; text-decoration: none; transition: border-color 0.2s, color 0.2s; }
+    .btn-secondary:hover { border-color: var(--silver-dim); color: var(--silver); }
+    .features { width: 100%; max-width: 900px; padding: 4rem 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 5rem; background: var(--border); }
+    .feature { padding: 2rem; background: var(--surface); display: flex; flex-direction: column; gap: 0.75rem; }
+    .feature-icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .feature-title { font-size: 0.95rem; font-weight: 700; color: var(--white); letter-spacing: 0.02em; }
+    .feature-desc { font-size: 0.85rem; color: var(--silver-dim); line-height: 1.55; }
+    .stats { display: flex; gap: 3rem; padding: 2rem 1.5rem 5rem; flex-wrap: wrap; justify-content: center; }
+    .stat { text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: 800; color: var(--silver); }
+    .stat-label { font-size: 0.8rem; color: var(--silver-dim); letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.25rem; }
+    footer { border-top: 1px solid var(--border); padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; z-index: 1; position: relative; }
+    footer p { font-size: 0.8rem; color: var(--silver-dim); }
+    @media (max-width: 600px) { .nav-links { display: none; } .features { grid-template-columns: 1fr; margin: 0 1rem 4rem; } .stats { gap: 2rem; } footer { flex-direction: column; gap: 0.5rem; text-align: center; } }
+  </style>
 </head>
 <body>
-    <noscript>
-      <p style="font-family: system-ui, sans-serif; padding: 2rem; color: #444;">
-        This learning portal requires JavaScript. Please enable it in your browser settings.
-      </p>
-    </noscript>
-    <div id="root"></div>
+  <nav>
+    <span class="nav-logo">Agentiz</span>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="/app/">Launch App</a></li>
+    </ul>
+  </nav>
+  <main>
+    <section class="hero">
+      <div class="hero-badge"><span class="hero-badge-dot"></span>Student Workspace</div>
+      <h1>Your <span>all-in-one</span><br>student workspace</h1>
+      <p class="hero-sub">Agentiz brings your study tools, resources, and learning apps together in one clean, fast workspace. Built for students, free forever.</p>
+      <div class="hero-actions">
+        <a href="/app/" class="btn-primary">Launch Workspace &rarr;</a>
+        <a href="#features" class="btn-secondary">See features</a>
+      </div>
+    </section>
+    <section class="features" id="features">
+      <div class="feature"><div class="feature-icon">📚</div><div class="feature-title">Study Resources</div><div class="feature-desc">Access your study materials, notes, and references from one organized hub.</div></div>
+      <div class="feature"><div class="feature-icon">🎮</div><div class="feature-title">Learning Games</div><div class="feature-desc">Educational games and interactive activities to make studying more engaging.</div></div>
+      <div class="feature"><div class="feature-icon">🎵</div><div class="feature-title">Focus Music</div><div class="feature-desc">Curated lo-fi and study playlists to help you stay focused while you work.</div></div>
+      <div class="feature"><div class="feature-icon">🤖</div><div class="feature-title">AI Assistant</div><div class="feature-desc">Get help with homework, explanations, and study questions from a built-in AI.</div></div>
+      <div class="feature"><div class="feature-icon">🌐</div><div class="feature-title">Web Access</div><div class="feature-desc">Browse educational content and research materials without interruptions.</div></div>
+      <div class="feature"><div class="feature-icon">⚙️</div><div class="feature-title">Personalized</div><div class="feature-desc">Choose your theme, layout, and tools. Agentiz adapts to how you study.</div></div>
+    </section>
+    <section class="stats" id="about">
+      <div class="stat"><div class="stat-number">9</div><div class="stat-label">Color Themes</div></div>
+      <div class="stat"><div class="stat-number">17+</div><div class="stat-label">Learning Games</div></div>
+      <div class="stat"><div class="stat-number">Free</div><div class="stat-label">Always</div></div>
+      <div class="stat"><div class="stat-number">PWA</div><div class="stat-label">Installable</div></div>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; 2026 Agentiz. Built for students.</p>
+    <p><a href="/app/" style="color: var(--silver-dim); text-decoration: none;">Launch App &rarr;</a></p>
+  </footer>
 </body>
 </html>
