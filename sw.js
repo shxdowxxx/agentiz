@@ -2,7 +2,7 @@ importScripts('/lib/app.bundle.js');
 importScripts('/lib/app.config.js');
 importScripts('/lib/app.sw.js');
 
-const sw = new UVServiceWorker();
+const sw = new AppServiceWorker();
 
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
@@ -15,8 +15,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     try {
         const url = new URL(event.request.url);
-        if (!url.pathname.startsWith(self.__uv$config.prefix)) return;
-        const encodedPath = url.pathname.slice(self.__uv$config.prefix.length);
+        if (!url.pathname.startsWith(self.__app$config.prefix)) return;
+        const encodedPath = url.pathname.slice(self.__app$config.prefix.length);
         if (!encodedPath || encodedPath.length === 0) return;
         event.respondWith(
             sw.fetch(event).catch(err => {

@@ -1,16 +1,16 @@
 {
-  "short_name": "StudyHub",
-  "name": "Student Study Hub",
-  "description": "Student workspace for homework, notes, and classroom resources.",
+  "short_name": "Agentiz",
+  "name": "Agentiz",
+  "description": "Agentiz \u2014 student workspace and learning tools.",
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#0d0d0d",
   "background_color": "#0d0d0d",
   "icons": [
     {
-      "src": "/koopbin.ico",
+      "src": "/icon.png",
       "sizes": "any",
-      "type": "image/x-icon"
+      "type": "image/png"
     }
   ]
 }
