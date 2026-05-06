@@ -11,11 +11,11 @@ const TILES = [
   { id: 'chatgpt',   label: 'ChatGPT',     url: 'https://chat.openai.com',        icon: '🤖', bg: 'rgba(16,163,127,0.10)', glow: 'rgba(16,163,127,0.18)'  },
 ];
 
-export default function QuickTiles({ proxyReady = true }) {
+export default function QuickTiles({ proxyReady = true, onNavigate }) {
   const launch = (tile) => {
     if (!proxyReady) return;
     const dest = proxyUrl(tile.url);
-    if (dest) window.location.href = dest;
+    if (dest) onNavigate?.(dest);
   };
 
   return (

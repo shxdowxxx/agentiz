@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { initTheme, getTheme, setTheme } from './lib/theme';
 import { initProxy } from './lib/proxy';
 import { getSettings, clearHistory, saveSetting } from './lib/storage';
+import { proxyUrl } from './lib/codec';
 import BootScreen from './components/BootScreen';
 import Navbar from './components/Navbar';
 import SettingsPanel from './components/SettingsPanel';
@@ -33,13 +34,30 @@ function applyCloak(id) {
 initTheme();
 
 export default function App() {
-  const [booted, setBooted]           = useState(false);
+  const [booted, setBooted]             = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [googleCloak, setGoogleCloak] = useState(false);
-  const [cmdOpen, setCmdOpen]         = useState(false);
+  const [googleCloak, setGoogleCloak]   = useState(false);
+  const [cmdOpen, setCmdOpen]           = useState(false);
+  // Global frame URL — used by command palette site launches
+  const frameRef = useRef(null);
+
+  const openFrame = useCallback((dest) => {
+    // Bubble up to Home via a custom event so the ProxyFrame in Home opens
+    window.dispatchEvent(new CustomEvent('agentiz:open-frame', { detail: { url: dest } }));
+  }, []);
 
   // Command palette action handler
-  const handleAction = useCallback(({ type }) => {
+  const handleAction = useCallback(({ type, url }) => {
+    const SITES = {
+      'go-classroom': 'https://classroom.google.com',
+      'go-docs':      'https://docs.google.com',
+      'go-youtube':   'https://youtube.com',
+      'go-wikipedia': 'https://en.wikipedia.org',
+      'go-reddit':    'https://reddit.com',
+      'go-chatgpt':   'https://chat.openai.com',
+    };
+    if (SITES[type]) { openFrame(proxyUrl(SITES[type])); return; }
+
     switch (type) {
       case 'cloak-google':    setGoogleCloak(true);  applyCloak('google');  break;
       case 'cloak-classroom': applyCloak('gclass');  break;
@@ -60,7 +78,7 @@ export default function App() {
         break;
       }
     }
-  }, []);
+  }, [openFrame]);
 
   useEffect(() => {
     initProxy();

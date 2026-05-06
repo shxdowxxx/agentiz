@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { getBookmarks, removeBookmark } from '../lib/storage';
 import { proxyUrl } from '../lib/codec';
 
-export default function Bookmarks() {
+export default function Bookmarks({ onNavigate }) {
   const [items, setItems] = useState(() => getBookmarks());
 
   if (items.length === 0) return null;
 
-  const launch = (url) => { const dest = proxyUrl(url); if (dest) window.location.href = dest; };
+  const launch = (url) => { const dest = proxyUrl(url); if (dest) onNavigate?.(dest); };
   const remove = (e, url) => {
     e.stopPropagation();
     removeBookmark(url);

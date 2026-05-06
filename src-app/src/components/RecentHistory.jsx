@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { getHistory, clearHistory } from '../lib/storage';
 import { proxyUrl } from '../lib/codec';
 
-export default function RecentHistory() {
+export default function RecentHistory({ onNavigate }) {
   const [items, setItems] = useState(() => getHistory().slice(0, 8));
 
   if (items.length === 0) return null;
 
   const clear = () => { clearHistory(); setItems([]); };
-  const launch = (url) => { const dest = proxyUrl(url); if (dest) window.location.href = dest; };
+  const launch = (url) => { const dest = proxyUrl(url); if (dest) onNavigate?.(dest); };
 
   return (
     <div>

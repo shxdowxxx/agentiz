@@ -21,7 +21,6 @@ export default function SearchBar({ onNavigate, proxyReady = true }) {
     if (!dest) return;
     pushHistory({ url: val, title: val });
     onNavigate?.(dest);
-    window.location.href = dest;
   };
 
   const activeEngine = ENGINES.find(e => e.id === engine);
