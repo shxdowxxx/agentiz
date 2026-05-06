@@ -1,9 +1,16 @@
-// XOR codec — matches engine/core.config.js AppCodec.xor
-export const encode = (str) =>
-  encodeURIComponent([...str].map(c => String.fromCharCode(c.charCodeAt(0) ^ 2)).join(''));
+// XOR codec — must exactly match Ultraviolet.codec.xor in engine/core.bundle.js
+const xorChar = (c) => String.fromCharCode(c.charCodeAt(0) ^ 2);
 
-export const decode = (str) =>
-  [...decodeURIComponent(str)].map(c => String.fromCharCode(c.charCodeAt(0) ^ 2)).join('');
+export const encode = (str) =>
+  encodeURIComponent(str.split('').map(xorChar).join(''));
+
+export const decode = (str) => {
+  const [input, ...search] = str.split('?');
+  return (
+    decodeURIComponent(input).split('').map(xorChar).join('') +
+    (search.length ? '?' + search.join('?') : '')
+  );
+};
 
 export function proxyUrl(url) {
   try {
