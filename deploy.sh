@@ -1,23 +1,10 @@
 #!/bin/bash
-# Agentiz deploy script
-# Usage:
-#   ./deploy.sh           — deploy to S3 (primary)
-#   ./deploy.sh firebase  — deploy to Firebase (educationalisticz.web.app, GoGuardian bypass)
+# Agentiz S3 deploy script
+# Usage: ./deploy.sh
 
 AWS=aws
 BUCKET=agentiz
 REGION=us-east-1
-
-# Firebase deploy
-if [ "$1" = "firebase" ]; then
-  echo "Deploying to Firebase Hosting (educationalisticz.web.app) ..."
-  firebase deploy --only hosting
-  echo ""
-  echo "Live at:"
-  echo "  https://educationalisticz.web.app"
-  echo "  https://educationalisticz.firebaseapp.com"
-  exit 0
-fi
 
 echo "Deploying to s3://$BUCKET ..."
 
