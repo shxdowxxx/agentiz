@@ -1,4 +1,4 @@
-importScripts('/sm/bundle.all.js');
+importScripts('/net-bundle.js');
 
 const { AppWorker } = $appLoadWorker();
 const netrunner = new AppWorker();

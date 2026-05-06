@@ -1,6 +1,6 @@
-importScripts('/lib/app.bundle.js');
-importScripts('/lib/app.config.js');
-importScripts('/lib/app.sw.js');
+importScripts('/engine/core.bundle.js');
+importScripts('/engine/core.config.js');
+importScripts('/engine/core.sw.js');
 
 const sw = new AppServiceWorker();
 
