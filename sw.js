@@ -1,26 +1,59 @@
+/* Agentiz service worker — UV v3.2.10 */
+
 importScripts('/engine/core.bundle.js');
 importScripts('/engine/core.config.js');
 importScripts('/engine/core.sw.js');
 
 const sw = new UVServiceWorker();
 
-// Ensure BareClient uses the configured bare server URL, not the default /bare/
+// Force BareClient to use the configured bare server (Railway), not the default /bare/
 if (self.Ultraviolet && self.Ultraviolet.BareClient && self.__uv$config && self.__uv$config.bare) {
     sw.bareClient = new self.Ultraviolet.BareClient(self.__uv$config.bare);
 }
 
-self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
-self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+});
 
-self.addEventListener('fetch', event => {
-    if (sw.route(event)) {
-        event.respondWith(
-            sw.fetch(event).catch(err =>
-                new Response(
-                    `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#0a0a0a;color:#ccc;padding:40px;text-align:center"><h2 style="color:#f66">Connection Error</h2><p>${err.message}</p><button onclick="history.back()" style="padding:10px 24px;background:#1a1a1a;border:1px solid #333;color:#ccc;border-radius:8px;cursor:pointer">Go back</button></body></html>`,
-                    { status: 500, headers: { 'Content-Type': 'text/html' } }
-                )
-            )
-        );
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+});
+
+// Page-side claim kicker — if the SW activated but the page is somehow
+// not yet controlled, the page can postMessage({ type: 'claim' }).
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'claim') {
+        self.clients.claim();
     }
+});
+
+self.addEventListener('fetch', (event) => {
+    // Only handle proxied URLs — let everything else (the app shell,
+    // assets, etc.) fall through to the network normally.
+    if (!sw.route(event)) return;
+
+    event.respondWith(
+        sw.fetch(event).catch((err) => {
+            const msg = (err && err.message) ? err.message : String(err);
+            return new Response(
+                `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Connection Error</title>
+<style>
+  body{font-family:'DM Sans',system-ui,sans-serif;background:#0b0b0d;color:#e8e8ec;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:40px;text-align:center}
+  .card{max-width:520px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(20px);border-radius:16px;padding:36px}
+  h2{margin:0 0 12px;font-weight:600;letter-spacing:-0.01em}
+  p{color:#a8a8b0;font-size:14px;line-height:1.5;margin:0 0 18px}
+  code{font-family:'DM Mono',monospace;font-size:11px;color:#888;display:block;background:rgba(0,0,0,0.3);padding:10px 12px;border-radius:8px;margin-bottom:18px;word-break:break-all}
+  button{padding:10px 22px;background:#f0f0f1;color:#0b0b0d;border:1px solid rgba(255,255,255,0.22);border-radius:9px;cursor:pointer;font-weight:600;font-family:inherit}
+  button:hover{opacity:0.88}
+</style></head><body>
+<div class="card">
+<h2>Connection Error</h2>
+<p>The proxy could not reach the destination. The bare server may be temporarily unavailable.</p>
+<code>${msg}</code>
+<button onclick="history.back()">Go back</button>
+</div></body></html>`,
+                { status: 502, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+            );
+        }),
+    );
 });

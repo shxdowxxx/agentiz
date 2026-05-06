@@ -1,54 +1,96 @@
-let ready = false;
-let registered = false;
+// Proxy / Service Worker bootstrap.
+//
+// IMPORTANT: On a fresh visit the page is NOT yet controlled by the SW.
+// Even after `clients.claim()` fires, navigation requests issued by
+// freshly-created iframes can race the activation and reach S3 directly,
+// returning 403 AccessDenied. The reliable cross-browser fix is to
+// **reload the page once** as soon as the SW takes control. After the
+// reload the page is SW-controlled from the start and every iframe
+// navigation is intercepted.
+
+const RELOAD_FLAG = 'agentiz_sw_bootstrapped';
+
+let ready    = false;
+let status   = 'init';      // 'init' | 'registering' | 'reloading' | 'ready' | 'unsupported' | 'error'
+let lastErr  = null;
+const subs   = new Set();
+
+function setStatus(next, err = null) {
+  status  = next;
+  lastErr = err;
+  ready   = (next === 'ready' || next === 'unsupported' || next === 'error');
+  subs.forEach(fn => { try { fn({ status, ready, err }); } catch {} });
+}
+
+export function onProxyChange(fn) {
+  subs.add(fn);
+  fn({ status, ready, err: lastErr });
+  return () => subs.delete(fn);
+}
 
 export async function initProxy() {
-  if (ready) return;
+  if (status !== 'init') return;
 
   if (!('serviceWorker' in navigator)) {
-    ready = true;
+    setStatus('unsupported');
     return;
   }
 
-  // Already controlled (return visit) — unblock immediately.
+  // Already controlled (return visit) — immediate ready.
   if (navigator.serviceWorker.controller) {
-    ready = true;
-    registered = true;
+    setStatus('ready');
     return;
   }
 
-  // Hard 4s timeout — never block UI longer than this.
-  const timeout = setTimeout(() => { ready = true; }, 4000);
+  setStatus('registering');
 
   try {
     const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-    registered = true;
 
-    // Wait for an active controller (clients.claim() in the SW activate handler).
+    // Wait for the SW to actually take control. clients.claim() in the SW
+    // activate handler triggers a `controllerchange` event on this page.
     if (!navigator.serviceWorker.controller) {
-      const active = await new Promise((resolve) => {
-        const sw = reg.installing || reg.waiting || reg.active;
-        if (sw && sw.state === 'activated' && navigator.serviceWorker.controller) {
-          return resolve(true);
-        }
+      await new Promise((resolve) => {
         const onChange = () => {
-          if (navigator.serviceWorker.controller) {
-            navigator.serviceWorker.removeEventListener('controllerchange', onChange);
-            resolve(true);
-          }
+          navigator.serviceWorker.removeEventListener('controllerchange', onChange);
+          resolve(true);
         };
         navigator.serviceWorker.addEventListener('controllerchange', onChange);
-        // Failsafe — resolve in 3.5s anyway so the timeout above can mark ready.
-        setTimeout(() => resolve(false), 3500);
+
+        // If the SW is already activated but controllerchange somehow
+        // didn't fire, push it along.
+        if (reg.active && reg.active.state === 'activated' && !navigator.serviceWorker.controller) {
+          // Forcing claim from the page side (some browsers need a kick).
+          reg.active.postMessage({ type: 'claim' });
+        }
+
+        // Hard 6s timeout — if SW never claims, we surface error.
+        setTimeout(() => resolve(false), 6000);
       });
-      void active;
     }
+
+    if (!navigator.serviceWorker.controller) {
+      setStatus('error', new Error('Service worker activated but never claimed this page.'));
+      return;
+    }
+
+    // First successful activation in this tab — reload once so the page
+    // is SW-controlled from initial load. Subsequent visits skip this.
+    if (!sessionStorage.getItem(RELOAD_FLAG)) {
+      sessionStorage.setItem(RELOAD_FLAG, '1');
+      setStatus('reloading');
+      // Tiny delay so React can render the "reloading" badge before reload.
+      setTimeout(() => window.location.reload(), 80);
+      return;
+    }
+
+    setStatus('ready');
   } catch (err) {
     console.warn('[agentiz] proxy SW register failed:', err);
+    setStatus('error', err);
   }
-
-  clearTimeout(timeout);
-  ready = true;
 }
 
-export function isProxyReady() { return ready; }
-export function isProxyRegistered() { return registered; }
+export function isProxyReady() { return ready && status === 'ready'; }
+export function getProxyStatus() { return status; }
+export function getProxyError() { return lastErr; }
