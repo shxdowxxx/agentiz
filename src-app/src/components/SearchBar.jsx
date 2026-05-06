@@ -8,7 +8,7 @@ const ENGINES = [
   { id: 'ddg',    label: 'D', title: 'DuckDuckGo', color: '#DE5833' },
 ];
 
-export default function SearchBar({ onNavigate }) {
+export default function SearchBar({ onNavigate, proxyReady = true }) {
   const [input, setInput] = useState('');
   const [engine, setEngine] = useState(getSettings().searchEngine || 'google');
   const [focused, setFocused] = useState(false);
@@ -16,7 +16,7 @@ export default function SearchBar({ onNavigate }) {
 
   const go = () => {
     const val = input.trim();
-    if (!val) return;
+    if (!val || !proxyReady) return;
     const dest = isUrl(val) ? proxyUrl(val) : searchUrl(val, engine);
     if (!dest) return;
     pushHistory({ url: val, title: val });
@@ -95,8 +95,12 @@ export default function SearchBar({ onNavigate }) {
           autoComplete="off" spellCheck={false}
         />
 
-        {/* Go button */}
-        {input.trim() && (
+        {/* Go button / loading state */}
+        {!proxyReady ? (
+          <div style={{ flexShrink: 0, padding: '9px 14px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-mute)', letterSpacing: '0.06em' }}>
+            loading…
+          </div>
+        ) : input.trim() ? (
           <button
             onClick={go}
             style={{
@@ -114,7 +118,7 @@ export default function SearchBar({ onNavigate }) {
           >
             Go →
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Keyboard hint */}

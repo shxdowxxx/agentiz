@@ -1,12 +1,30 @@
+import { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchBar';
 import QuickTiles from '../components/QuickTiles';
 import RecentHistory from '../components/RecentHistory';
 import Bookmarks from '../components/Bookmarks';
+import { isProxyReady } from '../lib/proxy';
 
 export default function Home() {
+  const [proxyReady, setProxyReady] = useState(() => isProxyReady());
+
+  useEffect(() => {
+    if (proxyReady) return;
+    // Poll until SW controller is confirmed
+    const interval = setInterval(() => {
+      if (isProxyReady()) {
+        setProxyReady(true);
+        clearInterval(interval);
+      }
+    }, 200);
+    // Also listen for controllerchange
+    const onCtrl = () => { setProxyReady(true); clearInterval(interval); };
+    navigator.serviceWorker?.addEventListener('controllerchange', onCtrl);
+    return () => { clearInterval(interval); navigator.serviceWorker?.removeEventListener('controllerchange', onCtrl); };
+  }, [proxyReady]);
+
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '48px 20px 80px' }}>
-      {/* Hero search */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
         <h1
           className="chrome-text"
@@ -14,20 +32,17 @@ export default function Home() {
         >
           agentiz
         </h1>
-        <SearchBar />
+        <SearchBar proxyReady={proxyReady} />
       </div>
 
-      {/* Quick tiles */}
       <div style={{ marginBottom: '40px' }}>
-        <QuickTiles />
+        <QuickTiles proxyReady={proxyReady} />
       </div>
 
-      {/* Bookmarks */}
       <div style={{ marginBottom: '32px' }}>
         <Bookmarks />
       </div>
 
-      {/* Recent history */}
       <RecentHistory />
     </div>
   );
