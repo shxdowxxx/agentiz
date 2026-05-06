@@ -1,0 +1,50 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      ".git",
+      ".firebaserc",
+      "firebase.json",
+      "deploy.sh",
+      "netlify.toml",
+      "wrangler.jsonc",
+      "node_modules"
+    ],
+    "headers": [
+      {
+        "source": "**/*.wasm",
+        "headers": [
+          { "key": "Content-Type", "value": "application/wasm" },
+          { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
+          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+        ]
+      },
+      {
+        "source": "sw.js",
+        "headers": [
+          { "key": "Service-Worker-Allowed", "value": "/" },
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "sw-bundle.js",
+        "headers": [
+          { "key": "Service-Worker-Allowed", "value": "/" },
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "bare-mux-worker.js",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/app",
+        "destination": "/app/index.html"
+      }
+    ]
+  }
+}

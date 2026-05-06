@@ -1,43 +1,558 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="referrer" content="no-referrer" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="theme-color" content="#0d0d0d" />
-    <title>Agentiz</title>
-    <meta name="description" content="Agentiz — your student workspace." />
-    <meta name="keywords" content="student tools, learning resources, educational platform" />
-    <meta name="author" content="Agentiz" />
-    <meta name="robots" content="index,follow" />
-    
-    
-    <meta name="rating" content="general" />
-    <meta name="content-type" content="education" />
-    <meta property="og:title" content="Agentiz" />
-    <meta property="og:description" content="Student workspace" />
-    <meta property="og:site_name" content="Agentiz" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Agentiz" />
-    <meta name="twitter:description" content="Student workspace" />
-    <link id="app-favicon" rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="manifest" href="/manifest.json" />
-    <script>(function(){try{window.history.replaceState(null,'','/');}catch(e){}})()</script>
-    <script>
-      (function(){try{var P={'default':{t:'Agentiz',f:'/favicon.ico',tp:'image/x-icon'},google:{t:'Google',f:'https://www.google.com/favicon.ico',tp:'image/x-icon'},gclass:{t:'Classes',f:'https://ssl.gstatic.com/classroom/favicon.png',tp:'image/png'},clever:{t:'Clever | Portal',f:'https://clever.com/favicon.ico',tp:'image/x-icon'},canvas:{t:'Dashboard',f:'https://du11hjcvx0uqb.cloudfront.net/dist/images/favicon-e10d657a73.ico',tp:'image/x-icon'},blank:{t:'\u200B',f:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E',tp:'image/svg+xml'}};window.__agCloakPresets=P;var g=function(){var id=localStorage.getItem('agentiz_cloak')||'default';return P[id]||P['default']};var bc=function(p){try{if(window.parent&&window.parent!==window){var h=p.f;if(h&&h.charAt(0)==='/')h=location.origin+h;window.parent.postMessage({__koop:'cloak',title:p.t,favicon:h},'*')}}catch(_){}};var f=g();document.title=f.t;var bl=document.getElementById('app-favicon')||document.querySelector("link[rel~='icon']");if(bl){bl.href=f.f;bl.type=f.tp||'image/x-icon'}bc(f);var rp=false;var ra=function(){if(rp)return;rp=true;try{var p=g();if(document.title!==p.t)document.title=p.t;var lk=document.querySelector("link[rel~='icon']");if(lk&&lk.href.indexOf(p.f)===-1&&lk.getAttribute('href')!==p.f){lk.href=p.f;lk.type=p.tp||'image/x-icon'}bc(p)}finally{rp=false}};window.__agApplyCloak=ra;var mo=new MutationObserver(ra);var st=function(){if(document.head)mo.observe(document.head,{childList:true,subtree:true});if(document.querySelector('title'))mo.observe(document.querySelector('title'),{childList:true});setInterval(ra,2000);window.addEventListener('storage',function(e){if(!e||e.key==='agentiz_cloak'||e.key===null)ra()});window.addEventListener('agentiz:cloak-changed',ra)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',st);else st()}catch(e){}})();
-    </script>
-  <script type="module" crossorigin src="/assets/index-BI90YYn0.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-Dvrxj_Zk.js">
-  <link rel="stylesheet" crossorigin href="/assets/index-maugozOS.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="theme-color" content="#0d0d0d" />
+  <title>Agentiz — Student Workspace</title>
+  <meta name="description" content="Agentiz is a free student workspace with tools for research, productivity, and learning. Access educational resources from anywhere." />
+  <meta name="keywords" content="student workspace, educational tools, online learning, student productivity, research tools, school resources, homework help" />
+  <meta name="author" content="Agentiz" />
+  <meta name="robots" content="index,follow" />
+  <meta name="rating" content="general" />
+  <meta name="category" content="education" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Agentiz — Student Workspace" />
+  <meta property="og:description" content="Free student workspace with tools for research, productivity, and learning." />
+  <meta property="og:site_name" content="Agentiz" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/icon.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Agentiz — Student Workspace" />
+  <meta name="twitter:description" content="Free student workspace for research and productivity." />
+
+  <link rel="icon" type="image/png" href="/icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="canonical" href="/" />
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
+  <!-- Schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "Agentiz",
+    "url": "/",
+    "description": "A free student workspace providing tools for academic research, productivity, and educational resource access.",
+    "foundingDate": "2024",
+    "audience": {
+      "@type": "EducationalAudience",
+      "educationalRole": "student"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Agentiz Workspace",
+    "applicationCategory": "EducationApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "Student workspace for research, learning, and academic productivity."
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --border: rgba(255,255,255,0.08);
+      --silver: #c0c0c0;
+      --silver-dim: #7a7a8a;
+      --white: #f0f0f0;
+      --accent: #8888ff;
+      --radius: 12px;
+      --font: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --mono: 'DM Mono', 'Courier New', monospace;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--font);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---- NAV ---- */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 56px;
+      background: rgba(13,13,13,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--silver);
+      letter-spacing: 0.08em;
+      text-decoration: none;
+    }
+
+    .nav-logo span {
+      color: var(--accent);
+    }
+
+    nav a.nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #0d0d0d;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+
+    nav a.nav-cta:hover { opacity: 0.85; }
+
+    /* ---- HERO ---- */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(136,136,255,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 50% 100%, rgba(136,136,255,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      padding: 6px 14px;
+      border: 1px solid rgba(136,136,255,0.25);
+      border-radius: 100px;
+      margin-bottom: 32px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 72px);
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--white);
+      max-width: 800px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--silver-dim);
+    }
+
+    .hero p {
+      font-size: clamp(15px, 2vw, 18px);
+      color: var(--silver-dim);
+      max-width: 520px;
+      margin-bottom: 44px;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #0d0d0d;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 24px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--silver-dim);
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.2); color: var(--white); }
+
+    /* ---- FEATURES ---- */
+    .features {
+      padding: 80px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      text-align: center;
+      color: var(--white);
+      margin-bottom: 56px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: border-color 0.2s, transform 0.2s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .card:hover {
+      border-color: rgba(136,136,255,0.25);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      background: rgba(136,136,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 18px;
+    }
+
+    .card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--silver-dim);
+      line-height: 1.5;
+    }
+
+    .card .card-arrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+    }
+
+    /* ---- STATS ---- */
+    .stats {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 24px;
+    }
+
+    .stats-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-around;
+      gap: 32px;
+      flex-wrap: wrap;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--white);
+      letter-spacing: -0.02em;
+      font-family: var(--mono);
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--silver-dim);
+      margin-top: 4px;
+    }
+
+    /* ---- CTA SECTION ---- */
+    .cta-section {
+      padding: 80px 24px;
+      text-align: center;
+    }
+
+    .cta-box {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 40px;
+    }
+
+    .cta-box h2 {
+      font-size: clamp(22px, 3vw, 32px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .cta-box p {
+      color: var(--silver-dim);
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
+
+    /* ---- FOOTER ---- */
+    footer {
+      padding: 24px 32px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer span {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--silver-dim);
+    }
+
+    footer nav a {
+      font-size: 12px;
+      color: var(--silver-dim);
+      text-decoration: none;
+      margin-left: 20px;
+      transition: color 0.15s;
+    }
+
+    footer nav a:hover { color: var(--white); }
+
+    /* ---- GRID BG ---- */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      z-index: 0;
+    }
+
+    .hero, .features, .stats, .cta-section, footer, nav {
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      .hero { padding: 100px 16px 60px; }
+      .cta-box { padding: 32px 20px; }
+      footer { justify-content: center; text-align: center; }
+      footer nav { margin-top: 8px; }
+      footer nav a { margin: 0 10px; }
+    }
+  </style>
 </head>
 <body>
-    <noscript>
-      <p style="font-family: system-ui, sans-serif; padding: 2rem; color: #444;">
-        This learning portal requires JavaScript. Please enable it in your browser settings.
-      </p>
-    </noscript>
-    <div id="root"></div>
+
+  <nav>
+    <a class="nav-logo" href="/"><span>ag</span>entiz</a>
+    <a class="nav-cta" href="/app/index.html">Open Workspace →</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-eyebrow">Free · No Account Required · Always Available</div>
+    <h1>Your Student Workspace,<br><em>Anywhere You Need It</em></h1>
+    <p>Research, browse, and learn without roadblocks. Agentiz gives students access to the tools they need — from any device, any network.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="/app/index.html">Open Workspace →</a>
+      <a class="btn-ghost" href="#features">See what's included</a>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stats-inner">
+      <div>
+        <div class="stat-num">100%</div>
+        <div class="stat-label">Free, always</div>
+      </div>
+      <div>
+        <div class="stat-num">0</div>
+        <div class="stat-label">Accounts required</div>
+      </div>
+      <div>
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Always online</div>
+      </div>
+      <div>
+        <div class="stat-num">5+</div>
+        <div class="stat-label">Built-in tools</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <p class="section-label">What's inside</p>
+    <h2 class="section-title">Everything you need to get work done</h2>
+    <div class="cards">
+
+      <a class="card" href="/app/index.html">
+        <div class="card-icon">🔍</div>
+        <h3>Open Browser</h3>
+        <p>Access any research resource or educational site without restrictions. Works on school networks.</p>
+        <span class="card-arrow">Launch browser →</span>
+      </a>
+
+      <div class="card">
+        <div class="card-icon">🎨</div>
+        <h3>Tab Cloaking</h3>
+        <p>Disguise your workspace as Google Classroom, Canvas, or any other site with one click.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">📚</div>
+        <h3>Study Focus</h3>
+        <p>Distraction-free environment built for getting through assignments and research faster.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <h3>Fast & Private</h3>
+        <p>No accounts, no tracking, no data stored. Your browsing stays between you and your screen.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <h3>Works Everywhere</h3>
+        <p>Chromebook, Windows, Mac, iPad. Any browser, any device, any school network.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">🔒</div>
+        <h3>Fully Encrypted</h3>
+        <p>All connections are encrypted end-to-end. No one can see what you're accessing.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="cta-box">
+      <h2>Ready to get started?</h2>
+      <p>No setup, no signup. Click below and your workspace opens instantly.</p>
+      <a class="btn-primary" href="/app/index.html" style="font-size:16px; padding:16px 32px;">
+        Open My Workspace →
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <span>© 2025 Agentiz. Free student workspace.</span>
+    <nav>
+      <a href="/app/index.html">Workspace</a>
+      <a href="/privacy.html">Privacy</a>
+    </nav>
+  </footer>
+
 </body>
 </html>

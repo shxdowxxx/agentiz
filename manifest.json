@@ -1,16 +1,25 @@
 {
   "short_name": "Agentiz",
-  "name": "Agentiz",
-  "description": "Agentiz \u2014 student workspace and learning tools.",
+  "name": "Agentiz Student Workspace",
+  "description": "Free student workspace for research, browsing, and learning. No account required.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "theme_color": "#0d0d0d",
   "background_color": "#0d0d0d",
+  "categories": ["education", "productivity", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icon.png",
       "sizes": "any",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
 }
