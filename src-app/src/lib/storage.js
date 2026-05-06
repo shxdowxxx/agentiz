@@ -51,11 +51,14 @@ export function clearHistory() {
 // ---- Settings ----
 
 const defaultSettings = {
-  theme:        'light',
-  searchEngine: 'google',
-  cloak:        'default',
-  panicKey:     'Escape',
-  panicDest:    'https://classroom.google.com',
+  theme:         'dark',
+  searchEngine:  'google',
+  cloak:         'default',
+  panicKey:      'Escape',
+  panicDest:     'https://classroom.google.com',
+  proxyEnabled:  true,
+  proxyGames:    true,
+  proxyMusic:    true,
 };
 
 export function getSettings() {

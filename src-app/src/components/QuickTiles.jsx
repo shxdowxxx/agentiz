@@ -1,14 +1,15 @@
 import { proxyUrl } from '../lib/codec';
+import { Icon } from '../lib/icons';
 
 const TILES = [
-  { id: 'classroom', label: 'Classroom',   url: 'https://classroom.google.com',  icon: '🎓', bg: 'rgba(15,157,88,0.12)',   glow: 'rgba(15,157,88,0.18)'   },
-  { id: 'canvas',    label: 'Canvas',      url: 'https://canvas.instructure.com', icon: '📋', bg: 'rgba(230,80,0,0.10)',    glow: 'rgba(230,80,0,0.16)'    },
-  { id: 'docs',      label: 'Docs',        url: 'https://docs.google.com',        icon: '📄', bg: 'rgba(26,115,232,0.10)', glow: 'rgba(26,115,232,0.18)'  },
-  { id: 'youtube',   label: 'YouTube',     url: 'https://youtube.com',            icon: '▶️', bg: 'rgba(255,0,0,0.10)',    glow: 'rgba(255,0,0,0.16)'     },
-  { id: 'wikipedia', label: 'Wikipedia',   url: 'https://en.wikipedia.org',       icon: '📖', bg: 'rgba(120,120,120,0.10)',glow: 'rgba(120,120,120,0.16)' },
-  { id: 'google',    label: 'Google',      url: 'https://google.com',             icon: '🌐', bg: 'rgba(66,133,244,0.10)', glow: 'rgba(66,133,244,0.18)'  },
-  { id: 'reddit',    label: 'Reddit',      url: 'https://reddit.com',             icon: '💬', bg: 'rgba(255,69,0,0.10)',   glow: 'rgba(255,69,0,0.16)'    },
-  { id: 'chatgpt',   label: 'ChatGPT',     url: 'https://chat.openai.com',        icon: '🤖', bg: 'rgba(16,163,127,0.10)', glow: 'rgba(16,163,127,0.18)'  },
+  { id: 'classroom', label: 'Classroom',   url: 'https://classroom.google.com',  icon: 'graduation' },
+  { id: 'canvas',    label: 'Canvas',      url: 'https://canvas.instructure.com', icon: 'clipboard' },
+  { id: 'docs',      label: 'Docs',        url: 'https://docs.google.com',        icon: 'document' },
+  { id: 'youtube',   label: 'YouTube',     url: 'https://youtube.com',            icon: 'play' },
+  { id: 'wikipedia', label: 'Wikipedia',   url: 'https://en.wikipedia.org',       icon: 'book' },
+  { id: 'google',    label: 'Google',      url: 'https://google.com',             icon: 'globe' },
+  { id: 'reddit',    label: 'Reddit',      url: 'https://reddit.com',             icon: 'message' },
+  { id: 'chatgpt',   label: 'ChatGPT',     url: 'https://chat.openai.com',        icon: 'sparkle' },
 ];
 
 export default function QuickTiles({ proxyReady = true, onNavigate }) {
@@ -20,7 +21,7 @@ export default function QuickTiles({ proxyReady = true, onNavigate }) {
 
   return (
     <div>
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: '14px' }}>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: '14px' }}>
         Quick Launch
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
@@ -28,30 +29,31 @@ export default function QuickTiles({ proxyReady = true, onNavigate }) {
           <button
             key={tile.id}
             onClick={() => launch(tile)}
-            className="tile-btn anim-fade-up"
+            className="tile-btn glass anim-fade-up"
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: '10px', padding: '20px 8px',
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
+              gap: '12px', padding: '22px 8px',
               borderRadius: '14px',
               cursor: 'pointer',
               textAlign: 'center',
-              animationDelay: `${i * 55}ms`,
+              animationDelay: `${i * 50}ms`,
+              color: 'var(--text-dim)',
             }}
           >
-            {/* Icon container */}
-            <div style={{
-              width: '46px', height: '46px',
-              borderRadius: '12px',
-              background: tile.bg,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '22px',
-              transition: 'box-shadow 0.18s',
-            }}>
-              {tile.icon}
+            <div
+              style={{
+                width: '46px', height: '46px',
+                borderRadius: '12px',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--silver)',
+                transition: 'color 0.2s, border-color 0.2s',
+              }}
+            >
+              <Icon name={tile.icon} size={20} stroke={1.6} />
             </div>
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', fontWeight: 500, color: 'var(--text-dim)' }}>
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '12.5px', fontWeight: 500 }}>
               {tile.label}
             </span>
           </button>

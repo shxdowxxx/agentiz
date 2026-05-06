@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getSettings, saveSetting } from '../lib/storage';
+import { Icon } from '../lib/icons';
 
 const PRESETS = [
   { id: 'default', label: 'Agentiz',         title: 'Agentiz',         favicon: '/icon.png' },
@@ -32,61 +33,51 @@ export default function QuickSwitch() {
     <div style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
-        title="Quick Switch tab appearance"
-        style={{
-          display: 'flex', alignItems: 'center', gap: '6px',
-          padding: '7px 12px',
-          borderRadius: '8px',
-          border: '1px solid var(--border-2)',
-          background: 'var(--surface)',
-          color: 'var(--text-dim)',
-          fontFamily: 'var(--font-sans)',
-          fontSize: '13px',
-          fontWeight: 500,
-          cursor: 'pointer',
-          transition: 'background 0.12s',
-        }}
+        title="Switch tab appearance"
+        className="icon-btn"
+        style={{ width: 'auto', padding: '0 12px', gap: '7px', fontSize: '12.5px', fontWeight: 500, color: 'var(--text-dim)' }}
       >
-        <span>⚡</span>
-        <span>Switch</span>
+        <Icon name="switch" size={14} />
+        <span>Cloak</span>
       </button>
 
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
           <div
+            className="glass-strong glass-bevel anim-scale-in"
             style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 50,
-              background: 'var(--surface)',
-              border: '1px solid var(--border-2)',
-              borderRadius: '10px',
-              padding: '4px',
-              minWidth: '200px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+              borderRadius: '12px',
+              padding: '6px',
+              minWidth: '220px',
+              boxShadow: 'var(--shadow-2)',
             }}
           >
-            {PRESETS.map(p => (
-              <button
-                key={p.id}
-                onClick={() => select(p)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  width: '100%', padding: '9px 12px',
-                  borderRadius: '7px',
-                  border: 'none',
-                  background: active === p.id ? 'var(--surface-2)' : 'transparent',
-                  color: active === p.id ? 'var(--text)' : 'var(--text-dim)',
-                  fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500,
-                  cursor: 'pointer', textAlign: 'left',
-                  transition: 'background 0.1s',
-                }}
-                onMouseOver={e => { if (active !== p.id) e.currentTarget.style.background = 'var(--surface-2)'; }}
-                onMouseOut={e => { if (active !== p.id) e.currentTarget.style.background = 'transparent'; }}
-              >
-                {p.label}
-                {active === p.id && <span style={{ fontSize: '10px', color: 'var(--text-mute)' }}>✓</span>}
-              </button>
-            ))}
+            {PRESETS.map(p => {
+              const isActive = active === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => select(p)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    width: '100%', padding: '9px 12px',
+                    borderRadius: '8px',
+                    background: isActive ? 'var(--surface-2)' : 'transparent',
+                    color: isActive ? 'var(--text)' : 'var(--text-dim)',
+                    fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500,
+                    cursor: 'pointer', textAlign: 'left',
+                    transition: 'background 0.1s, color 0.1s',
+                  }}
+                  onMouseOver={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface)'; }}
+                  onMouseOut={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  {p.label}
+                  {isActive && <Icon name="check" size={13} />}
+                </button>
+              );
+            })}
           </div>
         </>
       )}

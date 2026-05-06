@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getHistory, clearHistory } from '../lib/storage';
 import { proxyUrl } from '../lib/codec';
+import { Icon } from '../lib/icons';
 
 export default function RecentHistory({ onNavigate }) {
   const [items, setItems] = useState(() => getHistory().slice(0, 8));
@@ -39,7 +40,9 @@ export default function RecentHistory({ onNavigate }) {
             onMouseOver={e => e.currentTarget.style.background = 'var(--surface)'}
             onMouseOut={e => e.currentTarget.style.background = 'transparent'}
           >
-            <span style={{ fontSize: '12px', color: 'var(--text-mute)', flexShrink: 0 }}>🕐</span>
+            <span style={{ color: 'var(--silver-2)', flexShrink: 0, display: 'inline-flex' }}>
+              <Icon name="clock" size={13} />
+            </span>
             <span style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {item.title || item.url}
             </span>

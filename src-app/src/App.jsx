@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { initTheme, getTheme, setTheme } from './lib/theme';
 import { initProxy } from './lib/proxy';
@@ -9,10 +9,12 @@ import Navbar from './components/Navbar';
 import SettingsPanel from './components/SettingsPanel';
 import GoogleCloak from './components/GoogleCloak';
 import CommandPalette from './components/CommandPalette';
+import ProxyFrame from './components/ProxyFrame';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Games from './pages/Games';
+import Music from './pages/Music';
 
-// Tab cloak presets (mirrors index.html inline script)
 const CLOAK_PRESETS = {
   default:   { title: 'Agentiz',         favicon: '/icon.png' },
   google:    { title: 'Google',           favicon: 'https://www.google.com/favicon.ico' },
@@ -38,16 +40,20 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [googleCloak, setGoogleCloak]   = useState(false);
   const [cmdOpen, setCmdOpen]           = useState(false);
-  // Global frame URL — used by command palette site launches
-  const frameRef = useRef(null);
+  const [frameUrl, setFrameUrl]         = useState(null);
+
+  // Global proxy frame opener — any page can fire this event.
+  useEffect(() => {
+    const handler = (e) => { if (e.detail?.url) setFrameUrl(e.detail.url); };
+    window.addEventListener('agentiz:open-frame', handler);
+    return () => window.removeEventListener('agentiz:open-frame', handler);
+  }, []);
 
   const openFrame = useCallback((dest) => {
-    // Bubble up to Home via a custom event so the ProxyFrame in Home opens
     window.dispatchEvent(new CustomEvent('agentiz:open-frame', { detail: { url: dest } }));
   }, []);
 
-  // Command palette action handler
-  const handleAction = useCallback(({ type, url }) => {
+  const handleAction = useCallback(({ type }) => {
     const SITES = {
       'go-classroom': 'https://classroom.google.com',
       'go-docs':      'https://docs.google.com',
@@ -77,6 +83,7 @@ export default function App() {
         if (panicDest) window.location.href = panicDest;
         break;
       }
+      default: break;
     }
   }, [openFrame]);
 
@@ -84,7 +91,6 @@ export default function App() {
     initProxy();
 
     const onKey = (e) => {
-      // Ctrl+A → toggle Google cloak
       if (e.ctrlKey && e.key === 'a') {
         e.preventDefault();
         setGoogleCloak(prev => {
@@ -94,15 +100,11 @@ export default function App() {
         });
         return;
       }
-
-      // Ctrl+K → command palette
       if (e.ctrlKey && e.key === 'k') {
         e.preventDefault();
         setCmdOpen(o => !o);
         return;
       }
-
-      // Panic key
       if (!e.ctrlKey && !e.metaKey) {
         const { panicKey, panicDest } = getSettings();
         if (e.key === panicKey && panicDest && !cmdOpen && !settingsOpen) {
@@ -120,13 +122,13 @@ export default function App() {
     <HashRouter>
       {!booted && <BootScreen onDone={() => setBooted(true)} />}
 
-      {/* Google cloak overlay */}
       <GoogleCloak visible={googleCloak} onHide={() => { setGoogleCloak(false); applyCloak('default'); }} />
-
-      {/* Command palette */}
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} onAction={handleAction} />
 
-      <div style={{ opacity: booted ? 1 : 0, transition: 'opacity 0.3s ease' }}>
+      {/* Global proxy iframe overlay — visible from any route */}
+      <ProxyFrame url={frameUrl} onClose={() => setFrameUrl(null)} />
+
+      <div style={{ opacity: booted ? 1 : 0, transition: 'opacity 0.4s ease' }}>
         <Navbar
           onSettingsOpen={() => setSettingsOpen(true)}
           onCommandPalette={() => setCmdOpen(true)}
@@ -134,6 +136,8 @@ export default function App() {
         <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         <Routes>
           <Route path="/"      element={<Home />} />
+          <Route path="/games" element={<Games />} />
+          <Route path="/music" element={<Music />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </div>

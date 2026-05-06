@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getBookmarks, removeBookmark } from '../lib/storage';
 import { proxyUrl } from '../lib/codec';
+import { Icon } from '../lib/icons';
 
 export default function Bookmarks({ onNavigate }) {
   const [items, setItems] = useState(() => getBookmarks());
@@ -32,14 +33,17 @@ export default function Bookmarks({ onNavigate }) {
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                 padding: '12px 36px 12px 12px',
-                background: 'var(--surface)', border: '1px solid var(--border)',
                 borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
                 transition: 'border-color 0.12s',
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                backdropFilter: 'blur(12px)',
               }}
               onMouseOver={e => e.currentTarget.style.borderColor = 'var(--border-2)'}
               onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border)'}
             >
-              <span style={{ fontSize: '14px' }}>🔖</span>
+              <span style={{ display: 'inline-flex', color: 'var(--silver-2)' }}>
+                <Icon name="bookmark" size={13} />
+              </span>
               <span style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {item.title}
               </span>
@@ -52,9 +56,10 @@ export default function Bookmarks({ onNavigate }) {
                 background: 'none', border: 'none', color: 'var(--text-mute)',
                 cursor: 'pointer', fontSize: '12px', padding: '4px',
                 opacity: 0, transition: 'opacity 0.12s',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
-              ✕
+              <Icon name="close" size={12} />
             </button>
           </div>
         ))}

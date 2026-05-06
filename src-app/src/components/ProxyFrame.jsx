@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Icon } from '../lib/icons';
 
 export default function ProxyFrame({ url, onClose }) {
   const iframeRef = useRef(null);
@@ -12,83 +13,70 @@ export default function ProxyFrame({ url, onClose }) {
   if (!url) return null;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 5000,
-      display: 'flex', flexDirection: 'column',
-      background: '#0a0a0a',
-    }}>
-      {/* Toolbar */}
-      <div style={{
-        height: '44px', flexShrink: 0,
-        display: 'flex', alignItems: 'center', gap: '8px',
-        padding: '0 12px',
-        background: 'var(--surface, #141414)',
-        borderBottom: '1px solid var(--border, rgba(255,255,255,0.07))',
-      }}>
-        {/* Close */}
-        <button
-          onClick={onClose}
-          title="Close proxy"
-          style={{
-            width: '32px', height: '32px', borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,100,100,0.12)',
-            color: '#f88', cursor: 'pointer', fontSize: '14px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, transition: 'background 0.12s',
-          }}
-          onMouseOver={e => e.currentTarget.style.background = 'rgba(255,100,100,0.25)'}
-          onMouseOut={e => e.currentTarget.style.background = 'rgba(255,100,100,0.12)'}
-        >
-          ✕
+    <div
+      className="anim-fade-in"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 5000,
+        display: 'flex', flexDirection: 'column',
+        background: 'var(--bg)',
+      }}
+    >
+      <div
+        className="glass-strong"
+        style={{
+          height: '46px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '0 14px',
+          borderBottom: '1px solid var(--border-2)',
+        }}
+      >
+        <button onClick={onClose} className="icon-btn" title="Close" style={{ width: '32px', height: '32px' }}>
+          <Icon name="close" size={14} />
         </button>
 
-        {/* URL bar (display only) */}
         <div style={{
           flex: 1, height: '30px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '6px',
-          display: 'flex', alignItems: 'center', padding: '0 10px',
-          gap: '6px', overflow: 'hidden',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
+          display: 'flex', alignItems: 'center', padding: '0 12px',
+          gap: '8px', overflow: 'hidden',
         }}>
           {loading && (
             <div style={{
-              width: '10px', height: '10px', borderRadius: '50%',
-              border: '2px solid rgba(255,255,255,0.2)',
-              borderTopColor: '#8888ff',
+              width: '11px', height: '11px', borderRadius: '50%',
+              border: '2px solid var(--border-2)',
+              borderTopColor: 'var(--silver)',
               animation: 'spin 0.7s linear infinite',
               flexShrink: 0,
             }} />
           )}
           <span style={{
-            fontFamily: 'var(--font-mono, monospace)',
-            fontSize: '11px', color: 'rgba(255,255,255,0.35)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px', color: 'var(--text-mute)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            letterSpacing: '0.04em',
           }}>
             {currentUrl}
           </span>
         </div>
 
-        {/* Agentiz badge */}
         <span style={{
-          fontFamily: 'monospace', fontSize: '11px', fontWeight: 500,
-          color: 'rgba(136,136,255,0.6)', flexShrink: 0, letterSpacing: '0.06em',
+          fontFamily: 'var(--font-mono)', fontSize: '10.5px', fontWeight: 500,
+          color: 'var(--text-mute)', flexShrink: 0, letterSpacing: '0.16em',
+          textTransform: 'uppercase',
         }}>
           agentiz
         </span>
       </div>
 
-      {/* Spinner CSS */}
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-
-      {/* Proxy iframe */}
       <iframe
         ref={iframeRef}
         src={url}
         onLoad={() => setLoading(false)}
-        style={{ flex: 1, border: 'none', width: '100%', background: '#fff' }}
-        allow="fullscreen"
+        className="proxy-frame"
+        style={{ flex: 1, border: 'none', width: '100%' }}
+        allow="fullscreen; clipboard-read; clipboard-write"
         title="Agentiz Proxy"
       />
     </div>
