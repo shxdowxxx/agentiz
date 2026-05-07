@@ -70,6 +70,7 @@ input {
   display: flex;
   font-size: 14px;
   letter-spacing: -0.005em;
+  color: var(--ink);
 }
 
 #view {
@@ -330,7 +331,7 @@ input {
   background: var(--glass-2);
   backdrop-filter: blur(40px) saturate(140%);
   -webkit-backdrop-filter: blur(40px) saturate(140%);
-  border-left: 1px solid rgba(255,255,255,0.6);
+  border-left: 1px solid var(--line-strong);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -1670,3 +1671,53 @@ input {
 .theme-dark .recent-row:hover { background: rgba(255,255,255,0.04); }
 .theme-dark .friend-row,
 .theme-dark .lobby-card-h { border-color: rgba(255,255,255,0.06); }
+
+/* ── Dark mode — remaining fixes ─────────────────────────── */
+
+/* Compose bars: ageniuz + comms thread */
+.theme-dark .ageniuz-compose {
+  background: rgba(255,255,255,0.04);
+  border-top-color: rgba(255,255,255,0.08);
+}
+.theme-dark .thread-compose {
+  background: rgba(255,255,255,0.04);
+  border-top-color: rgba(255,255,255,0.08);
+}
+
+/* Comms unread badge — white bg + hardcoded white text = invisible */
+.theme-dark .comms-unread { background: #fff; color: #0e1014; }
+
+/* Nav count pills and ⌘K badge — black bg invisible on dark */
+.theme-dark .nav-item .count,
+.theme-dark .search .kbd { background: rgba(255,255,255,0.1); color: var(--ink-3); }
+
+/* Active nav item shadow uses hardcoded dark rgba */
+.theme-dark .nav-item.active {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+/* Micro icon hover states using black rgba — invisible on dark */
+.theme-dark .sidebar-chrome .icon:hover,
+.theme-dark .section-label .add:hover { background: rgba(255,255,255,0.06); color: var(--ink); }
+
+/* Scrollbars — black thumb invisible on dark */
+.theme-dark .tree::-webkit-scrollbar-thumb,
+.theme-dark .main-body::-webkit-scrollbar-thumb,
+.theme-dark .thread-stream::-webkit-scrollbar-thumb,
+.theme-dark .ageniuz-stream::-webkit-scrollbar-thumb,
+.theme-dark .log-stream::-webkit-scrollbar-thumb,
+.theme-dark .comms-list::-webkit-scrollbar-thumb,
+.theme-dark .comms-thread::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+
+/* Sandbox running instances hover */
+.theme-dark .sandbox-instance:hover { background: rgba(255,255,255,0.04); }
+
+/* Detail rows in dashboard sessions table */
+.theme-dark .detail-row { border-bottom-color: rgba(255,255,255,0.06); }
+
+/* Card action links */
+.theme-dark .card-action { color: var(--ink-3); }
+.theme-dark .card-action:hover { color: var(--ink); }
+
+/* See report link border */
+.theme-dark .see-report { border-top-color: rgba(255,255,255,0.1); color: var(--ink-2); }
