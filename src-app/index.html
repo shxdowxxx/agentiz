@@ -57,7 +57,7 @@
       if (!window.BareMux || !window.BareMux.BareMuxConnection) return;
       try {
         var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
-        conn.setTransport('/transport/bare-mod-transport.js', [
+        conn.setTransport('/transport/bare-mod-transport.mjs', [
           'https://balanced-amazement-production-c715.up.railway.app/'
         ]);
       } catch (e) {
