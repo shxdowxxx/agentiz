@@ -1,15 +1,18 @@
 // Proxy / Service Worker bootstrap.
 //
+// The hard-refresh edge case (Ctrl+Shift+R) deliberately leaves the
+// reloaded page UNCONTROLLED by the service worker even after the SW
+// activates and calls clients.claim(). To recover, if the controller
+// is still null after registration completes we trigger a normal
+// reload — that load IS controlled and proxy fetches start working.
+//
 // Status pipeline:
-//   init → registering → (reloading once) → ready
+//   init → registering → (reloading) → ready
 //                     ↓
 //                   error / unsupported / insecure / blocked
-//
-// On first activation we reload once so the page is SW-controlled from
-// its initial load — otherwise iframe navigations race the SW and bypass
-// it (they hit S3 directly and return AccessDenied).
 
-const RELOAD_FLAG = 'agentiz_sw_bootstrapped';
+const RELOAD_KEY = 'agentiz_sw_reload_count';
+const MAX_RELOADS = 2;
 
 let ready    = false;
 let status   = 'init';
@@ -39,8 +42,34 @@ function gatherDiag() {
     host:       location.host,
     swApi:      ('serviceWorker' in navigator),
     inIframe:   window !== window.top,
+    controller: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
     ua:         navigator.userAgent.slice(0, 100),
   };
+}
+
+function waitForController(reg, timeoutMs) {
+  return new Promise((resolve) => {
+    if (navigator.serviceWorker.controller) return resolve(true);
+
+    const onChange = () => {
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.removeEventListener('controllerchange', onChange);
+        resolve(true);
+      }
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', onChange);
+
+    // Backup: ask the active worker to claim again.
+    const sw = reg.active || reg.waiting || reg.installing;
+    if (sw) {
+      try { sw.postMessage({ type: 'claim' }); } catch {}
+    }
+
+    setTimeout(() => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onChange);
+      resolve(!!navigator.serviceWorker.controller);
+    }, timeoutMs);
+  });
 }
 
 export async function initProxy() {
@@ -48,65 +77,61 @@ export async function initProxy() {
 
   diag = gatherDiag();
 
-  // ---- Insecure context (http://) — SWs are unavailable.
   if (!diag.secure) {
     setStatus('insecure', new Error('Page loaded over insecure context (http). Service workers require https.'));
     return;
   }
-
-  // ---- Browser doesn't expose the SW API at all (very rare).
   if (!diag.swApi) {
     setStatus('unsupported', new Error('navigator.serviceWorker is not available in this browser/context.'));
     return;
   }
 
-  // ---- Already controlled (return visit) — instant ready.
+  // Fast path — return visit, page already controlled.
   if (navigator.serviceWorker.controller) {
+    sessionStorage.removeItem(RELOAD_KEY);
     setStatus('ready');
     return;
   }
 
   setStatus('registering');
 
+  let reg;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-
-    if (!navigator.serviceWorker.controller) {
-      const claimed = await new Promise((resolve) => {
-        const onChange = () => {
-          navigator.serviceWorker.removeEventListener('controllerchange', onChange);
-          resolve(true);
-        };
-        navigator.serviceWorker.addEventListener('controllerchange', onChange);
-
-        // Backup kick — message the active SW asking it to claim this client.
-        if (reg.active && reg.active.state === 'activated') {
-          try { reg.active.postMessage({ type: 'claim' }); } catch {}
-        }
-
-        setTimeout(() => resolve(false), 6000);
-      });
-
-      if (!claimed && !navigator.serviceWorker.controller) {
-        setStatus('blocked', new Error('Service worker activated but could not take control of this page (commonly caused by a network filter blocking the worker).'));
-        return;
-      }
-    }
-
-    // First activation in this tab — reload once so the page is
-    // SW-controlled from initial load and iframes are intercepted.
-    if (!sessionStorage.getItem(RELOAD_FLAG)) {
-      sessionStorage.setItem(RELOAD_FLAG, '1');
-      setStatus('reloading');
-      setTimeout(() => window.location.reload(), 80);
-      return;
-    }
-
-    setStatus('ready');
+    reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
   } catch (err) {
     console.warn('[agentiz] SW register failed:', err);
     setStatus('error', err);
+    return;
   }
+
+  // Give the SW up to 6s to take control via clients.claim().
+  await waitForController(reg, 6000);
+
+  // STILL not controlling — happens after Ctrl+Shift+R, in some incognito
+  // contexts, or when an old SW exists at a different scope. The cure is
+  // a normal reload: that navigation will be controlled by the SW.
+  if (!navigator.serviceWorker.controller) {
+    const count = parseInt(sessionStorage.getItem(RELOAD_KEY) || '0', 10);
+    if (count < MAX_RELOADS) {
+      sessionStorage.setItem(RELOAD_KEY, String(count + 1));
+      diag = gatherDiag();
+      setStatus('reloading');
+      // Tiny delay so the UI flashes the "RELOADING" pill before navigation.
+      setTimeout(() => window.location.reload(), 80);
+      return;
+    }
+    diag = gatherDiag();
+    setStatus(
+      'blocked',
+      new Error('SW activated but never claimed this page after multiple reloads. Close the tab and reopen, or try a different browser.'),
+    );
+    return;
+  }
+
+  // Controller acquired — clear the counter for the next visit.
+  sessionStorage.removeItem(RELOAD_KEY);
+  diag = gatherDiag();
+  setStatus('ready');
 }
 
 export function isProxyReady()    { return ready; }
