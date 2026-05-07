@@ -1,16 +1,30 @@
-// XOR codec — must exactly match Ultraviolet.codec.xor in engine/core.bundle.js
-const xorChar = (c) => String.fromCharCode(c.charCodeAt(0) ^ 2);
+// Ultraviolet xor codec — must EXACTLY match `Ultraviolet.codec.xor`
+// in engine/core.bundle.js, otherwise the SW decodes the proxied URL
+// to garbage and the iframe stays blank.
+//
+// Reference (UV source src/rewrite/codec.ts):
+//   xor.encode XORs ONLY odd-indexed characters with 2, then encodeURIComponent.
+//   xor.decode does the inverse and preserves the query string verbatim.
 
-export const encode = (str) =>
-  encodeURIComponent(str.split('').map(xorChar).join(''));
+export function encode(str) {
+  if (!str) return str;
+  let result = '';
+  for (let i = 0; i < str.length; i++) {
+    result += i % 2 ? String.fromCharCode(str.charCodeAt(i) ^ 2) : str.charAt(i);
+  }
+  return encodeURIComponent(result);
+}
 
-export const decode = (str) => {
-  const [input, ...search] = str.split('?');
-  return (
-    decodeURIComponent(input).split('').map(xorChar).join('') +
-    (search.length ? '?' + search.join('?') : '')
-  );
-};
+export function decode(str) {
+  if (!str) return str;
+  const [first, ...search] = str.split('?');
+  const input = decodeURIComponent(first);
+  let result = '';
+  for (let i = 0; i < input.length; i++) {
+    result += i % 2 ? String.fromCharCode(input.charCodeAt(i) ^ 2) : input.charAt(i);
+  }
+  return result + (search.length ? '?' + search.join('?') : '');
+}
 
 export function proxyUrl(url) {
   try {
