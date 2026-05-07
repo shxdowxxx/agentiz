@@ -34,7 +34,15 @@ $AWS s3 cp index.html s3://$BUCKET/index.html \
 
 # Proxy engine files
 $AWS s3 sync engine/ s3://$BUCKET/engine/ --content-type "application/javascript"
-$AWS s3 sync transport/ s3://$BUCKET/transport/ --content-type "application/javascript"
+# Transport — bare-mux + bare-as-module3 (.mjs needs javascript MIME too)
+$AWS s3 sync transport/ s3://$BUCKET/transport/ \
+  --content-type "application/javascript" \
+  --cache-control "public, max-age=3600" \
+  --exclude "*.mjs"
+$AWS s3 sync transport/ s3://$BUCKET/transport/ \
+  --content-type "application/javascript" \
+  --cache-control "public, max-age=3600" \
+  --exclude "*" --include "*.mjs"
 $AWS s3 sync relay/ s3://$BUCKET/relay/ --content-type "application/javascript"
 $AWS s3 sync netfetch/ s3://$BUCKET/netfetch/ --content-type "application/javascript"
 

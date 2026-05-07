@@ -1,17 +1,16 @@
-/* Agentiz service worker — UV v3.2.10 */
+/* Agentiz service worker — UV v3.2.10 + bare-mux */
 
+// Order matters: bare-mux must load BEFORE UV so UVServiceWorker's
+// `new BareClient()` (no args) finds the BareMux global and uses the
+// transport that the page registered via setTransport().
+importScripts('/transport/bare-mux.js');
 importScripts('/engine/core.bundle.js');
 importScripts('/engine/core.config.js');
 importScripts('/engine/core.sw.js');
 
 const sw = new UVServiceWorker();
 
-// Force BareClient to use the configured bare server (Railway), not the default /bare/
-if (self.Ultraviolet && self.Ultraviolet.BareClient && self.__uv$config && self.__uv$config.bare) {
-    sw.bareClient = new self.Ultraviolet.BareClient(self.__uv$config.bare);
-}
-
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
     self.skipWaiting();
 });
 
@@ -19,8 +18,6 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
 });
 
-// Page-side claim kicker — if the SW activated but the page is somehow
-// not yet controlled, the page can postMessage({ type: 'claim' }).
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'claim') {
         self.clients.claim();
@@ -28,8 +25,6 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Only handle proxied URLs — let everything else (the app shell,
-    // assets, etc.) fall through to the network normally.
     if (!sw.route(event)) return;
 
     event.respondWith(

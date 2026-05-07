@@ -45,6 +45,27 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- BareMux setup — must run BEFORE the SW handles its first proxied
+       request, which means before any iframe nav. Loaded synchronously
+       so window.BareMux is defined by the time React boots. -->
+  <script src="/transport/bare-mux.js"></script>
+  <script>
+    (function () {
+      try {
+        if (!('serviceWorker' in navigator)) return;
+        if (!window.BareMux || !window.BareMux.BareMuxConnection) {
+          console.warn('[agentiz] BareMux global missing — proxy will not work');
+          return;
+        }
+        var BARE_URL = 'https://balanced-amazement-production-c715.up.railway.app/';
+        var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
+        conn.setTransport('/transport/bare-mod-transport.mjs', [{ bare: BARE_URL }]);
+        window.__agentizBareReady = true;
+      } catch (err) {
+        console.warn('[agentiz] BareMux init failed:', err);
+      }
+    })();
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
