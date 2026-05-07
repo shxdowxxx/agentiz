@@ -1,5 +1,0 @@
-Contact: mailto:agentiz@proton.me
-Expires: 2026-05-05T00:00:00.000Z
-Preferred-Languages: en
-Canonical: /.well-known/security.txt
-Policy: This site is a free student educational workspace. We welcome responsible disclosure of any issues.
