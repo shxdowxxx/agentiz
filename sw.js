@@ -29,7 +29,12 @@ self.addEventListener('fetch', (event) => {
 
     event.respondWith(
         sw.fetch(event).catch((err) => {
-            const msg = (err && err.message) ? err.message : String(err);
+            const raw = (err && err.message) ? err.message : String(err);
+            // Friendlier message for the common bare-server rate-limit case.
+            const overloaded = /keep-alive|429|Too Many|rate limit/i.test(raw);
+            const msg = overloaded
+              ? 'The proxy server is overloaded right now (too many concurrent connections). Wait a few seconds and reload the iframe.'
+              : raw;
             return new Response(
                 `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Connection Error</title>
 <style>
