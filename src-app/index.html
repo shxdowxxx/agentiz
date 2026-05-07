@@ -58,10 +58,14 @@
           return;
         }
         // Switched from bare-as-module3 → epoxy + wisp.
-        // Epoxy uses WebSocket-Wisp protocol — no per-IP keep-alive
-        // limit, ~5–10x faster, and the public Wisp server hosted by
-        // MercuryWorkshop is free.
-        var WISP_URL = 'wss://wisp.mercurywork.shop/';
+        // Epoxy multiplexes everything over a single WebSocket via the
+        // Wisp protocol — no per-IP keep-alive limit, ~5–10x faster.
+        //
+        // Public Wisp servers (probed at deploy time):
+        //   wisp.mercurywork.shop — DEAD (SSL handshake fails)
+        //   anura.pro             — alive, primary
+        //   wisp.terbiumon.top    — alive, fallback
+        var WISP_URL = 'wss://anura.pro/';
         var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
         conn.setTransport('/relay/epoxy-transport.mjs', [{ wisp: WISP_URL }]);
         window.__agentizTransportReady = true;
