@@ -13,6 +13,8 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="dns-prefetch" href="https://a.luminsdk.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <!-- Tab cloaking: preserves title/favicon based on saved theme preference -->
   <script>
@@ -51,27 +53,74 @@
   <script src="/transport/bare-mux.js"></script>
   <script>
     (function () {
-      try {
-        if (!('serviceWorker' in navigator)) return;
-        if (!window.BareMux || !window.BareMux.BareMuxConnection) {
-          console.warn('[agentiz] BareMux global missing — proxy will not work');
-          return;
-        }
-        // Switched from bare-as-module3 → epoxy + wisp.
-        // Epoxy multiplexes everything over a single WebSocket via the
-        // Wisp protocol — no per-IP keep-alive limit, ~5–10x faster.
-        //
-        // Public Wisp servers (probed at deploy time):
-        //   wisp.mercurywork.shop — DEAD (SSL handshake fails)
-        //   anura.pro             — alive, primary
-        //   wisp.terbiumon.top    — alive, fallback
-        var WISP_URL = 'wss://anura.pro/';
-        var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
-        conn.setTransport('/relay/epoxy-transport.mjs', [{ wisp: WISP_URL }]);
-        window.__agentizTransportReady = true;
-      } catch (err) {
-        console.warn('[agentiz] BareMux init failed:', err);
+      if (!('serviceWorker' in navigator)) return;
+      if (!window.BareMux || !window.BareMux.BareMuxConnection) {
+        console.warn('[agentiz] BareMux global missing — proxy will not work');
+        return;
       }
+
+      // Public Wisp servers, tried in order. Each one is a real wisp
+      // backend (verified via WS handshake + first wisp packet).
+      // If one is blocked by a network filter the page transparently
+      // moves to the next.
+      var WISP_CANDIDATES = [
+        'wss://anura.pro/',
+        'wss://wisp.terbiumon.top/wisp/',
+        'wss://terbiumon.top/wisp/',
+        'wss://anura.pro/wisp/',
+      ];
+
+      function probeWisp(url, timeoutMs) {
+        return new Promise(function (resolve) {
+          var ws, timer, done = false;
+          function finish(ok) {
+            if (done) return; done = true;
+            try { ws && ws.close(); } catch (_) {}
+            clearTimeout(timer);
+            resolve(ok);
+          }
+          try { ws = new WebSocket(url); } catch (_) { return resolve(false); }
+          ws.binaryType = 'arraybuffer';
+          timer = setTimeout(function () { finish(false); }, timeoutMs);
+          // Any binary frame from the server == it's actually wisp.
+          ws.addEventListener('message', function (e) {
+            if (e.data instanceof ArrayBuffer && e.data.byteLength > 0) finish(true);
+          });
+          ws.addEventListener('error', function () { finish(false); });
+          ws.addEventListener('close', function () { finish(false); });
+        });
+      }
+
+      function setTransport(wispUrl) {
+        try {
+          var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
+          conn.setTransport('/relay/epoxy-transport.mjs', [{ wisp: wispUrl }]);
+          window.__agentizWispUrl = wispUrl;
+          console.info('[agentiz] wisp transport set →', wispUrl);
+        } catch (err) {
+          console.warn('[agentiz] setTransport failed:', err);
+        }
+      }
+
+      // Optimistic first pick — set immediately so SW has a transport
+      // even if probing is slow. Then probe and re-set if needed.
+      setTransport(WISP_CANDIDATES[0]);
+
+      (async function () {
+        for (var i = 0; i < WISP_CANDIDATES.length; i++) {
+          var url = WISP_CANDIDATES[i];
+          var ok = await probeWisp(url, 3000);
+          console.info('[agentiz] wisp probe', url, ok ? 'OK' : 'FAIL');
+          if (ok) {
+            if (window.__agentizWispUrl !== url) setTransport(url);
+            window.__agentizWispReady = true;
+            return;
+          }
+        }
+        console.error('[agentiz] all wisp candidates failed — proxy will not work. ' +
+          'Likely cause: network filter is blocking WebSocket connections to known wisp servers.');
+        window.__agentizWispReady = false;
+      })();
     })();
   </script>
   <script type="module" src="/src/main.jsx"></script>

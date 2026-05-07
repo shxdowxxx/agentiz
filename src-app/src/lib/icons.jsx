@@ -30,6 +30,10 @@ export function Icon({ name, size = 18, stroke = 1.6, ...rest }) {
       return <svg {...props}><path d="M18 6 6 18M6 6l12 12"/></svg>;
     case 'arrow-right':
       return <svg {...props}><path d="M5 12h14M13 6l6 6-6 6"/></svg>;
+    case 'arrow-left':
+      return <svg {...props}><path d="M19 12H5M11 6l-6 6 6 6"/></svg>;
+    case 'loader':
+      return <svg {...props} style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>;
     case 'home':
       return <svg {...props}><path d="m3 12 9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>;
     case 'globe':
