@@ -47,6 +47,24 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- bare-mux transport: loaded sync so BareMux is ready before React boots.
+       Uses bare-mod (bare protocol v3) directly to the Railway bare server.
+       No Wisp/epoxy — eliminates the "headers is not iterable" crash. -->
+  <script src="/transport/bare-mux.js"></script>
+  <script>
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      if (!window.BareMux || !window.BareMux.BareMuxConnection) return;
+      try {
+        var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
+        conn.setTransport('/transport/bare-mod-transport.js', [
+          'https://balanced-amazement-production-c715.up.railway.app/'
+        ]);
+      } catch (e) {
+        console.warn('[agentiz] transport init failed:', e);
+      }
+    })();
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

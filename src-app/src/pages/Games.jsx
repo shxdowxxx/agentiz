@@ -104,7 +104,11 @@ export default function Games() {
   function bootLumin() {
     if (abortRef.current) return;
     try {
-      const inst = new window.Lumin();
+      // Lumin is a singleton object, not a class — use it directly.
+      const inst = window.Lumin;
+      if (!inst || typeof inst.init !== 'function') {
+        throw new Error('Lumin SDK did not expose an init() method.');
+      }
       lumRef.current = inst;
       inst.init({
         headless: true,
