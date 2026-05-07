@@ -45,6 +45,8 @@
     download:(sz=18, sw=1.6) => mksvg(sz,sw,'<path d="M12 5v12"/><path d="M6 13l6 6 6-6"/><path d="M3 21h18"/>'),
     lock:    (sz=18, sw=1.6) => mksvg(sz,sw,'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
     filter:  (sz=18, sw=1.6) => mksvg(sz,sw,'<path d="M4 5h16l-6 8v6l-4-2v-4L4 5z"/>'),
+    play:    (sz=18, sw=1.6) => mksvg(sz,sw,'<path d="M7 5v14l12-7L7 5z"/>'),
+    star:    (sz=18, sw=1.6) => mksvg(sz,sw,'<path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1L3.2 9.4l6.1-.9L12 3z"/>'),
     bolt2:   (sz=18, sw=1.6) => mksvg(sz,sw,'<path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z"/>'),
   };
 
@@ -171,6 +173,7 @@
     logFilter: 'All',
     logQuery: '',
     catalogTab: 'All',
+    activeProxy: 'uv-edge-04',
     sbPreset: 'stealth',
     sbUrl: '',
     sbRunning: [
@@ -427,72 +430,170 @@
   }
 
   function viewDashboard() {
-    const spark = renderSpark([12,18,9,22,30,24,38,28,41,36,50,44,58,52]);
-    const donut = renderDonut(64, 100);
-    const sessions = [
-      { n:1, name:'Ultraviolet · proxy', host:'uv-edge-04',     up:'12m',     state:'Streaming' },
-      { n:2, name:'Tetris · game',       host:'client-laptop',  up:'4m',      state:'Playing'   },
-      { n:3, name:'Speed Test · utility',host:'client-laptop',  up:'32s',     state:'Running'   },
-      { n:4, name:'Rammerhead · proxy',  host:'rh-edge-01',     up:'1h 12m',  state:'Streaming' },
+    const featured = [
+      { name:'Tetris',   tag:'Arcade',  meta:'1p · html5', plays:'1.2k', hot:true,  glyph:'▦' },
+      { name:'2048',     tag:'Puzzle',  meta:'1p · html5', plays:'984',  hot:true,  glyph:'▤' },
+      { name:'Chess',    tag:'Classic', meta:'2p · html5', plays:'612',  hot:false, glyph:'♞' },
+      { name:'Snake',    tag:'Arcade',  meta:'1p · html5', plays:'548',  hot:false, glyph:'▟' },
     ];
+    const proxies = [
+      { id:'uv-edge-04', name:'Ultraviolet', region:'uv-edge-04', ping:38, load:42, status:'online' },
+      { id:'rh-edge-01', name:'Rammerhead',  region:'rh-edge-01', ping:54, load:61, status:'online' },
+      { id:'al-edge-02', name:'Alloy',       region:'al-edge-02', ping:71, load:28, status:'online' },
+      { id:'wg-edge-03', name:'Womginx',     region:'wg-edge-03', ping:96, load:12, status:'idle'   },
+    ];
+    const friends = [
+      { n:'Nova',    s:'online',  doing:'Arcade · Tetris' },
+      { n:'Juno',    s:'online',  doing:'queued · Chess' },
+      { n:'Ren',     s:'idle',    doing:'—' },
+      { n:'Saoirse', s:'online',  doing:'Speed Test' },
+    ];
+    const recent = [
+      { n:'Tetris',      kind:'Game',  ago:'2m ago' },
+      { n:'Ultraviolet', kind:'Proxy', ago:'8m ago' },
+      { n:'Speed Test',  kind:'Tool',  ago:'30m ago' },
+      { n:'2048',        kind:'Game',  ago:'1h ago' },
+    ];
+    const glyphFor = (kind) => kind === 'Game' ? '▦' : kind === 'Proxy' ? '◉' : '◇';
+
     return `<main class="main">
       <div class="main-head">
         <div>
-          <div class="main-title">Dashboard</div>
-          <div class="main-sub">All your sessions, proxies and tools at a glance.</div>
+          <div class="main-title">Lobby</div>
+          <div class="main-sub">Pick a game, hop on a proxy, or jump back into something you were running.</div>
         </div>
         <div class="main-head-actions">
-          <button class="btn">${I.upload(14)} Import</button>
-          <button class="btn btn-primary" data-action="launch-session">${I.bolt(14)} New Session</button>
+          <button class="btn">${I.search(14)} Search catalog</button>
+          <button class="btn btn-primary" data-action="launch-session">${I.play(14)} Quick play</button>
         </div>
       </div>
-      <div class="main-body">
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">Sessions today</span>
-            <button class="card-action">Live ${I.arrow(12)}</button>
+      <div class="main-body lobby">
+
+        <!-- Hero featured game -->
+        <div class="lobby-hero">
+          <div class="lobby-hero-art">
+            <div class="lobby-hero-glyph">▦</div>
+            <div class="lobby-hero-grid"></div>
           </div>
-          <div class="stat-big">
-            <span id="dash-count">0</span>
-            <span class="stat-delta">${I.arrow(10)} 24%</span>
-          </div>
-          <div class="stat-foot">vs. 274 yesterday · 4.2k this month</div>
-          ${spark}
-          <div class="see-report">See full report ${I.arrow(12)}</div>
-        </div>
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">Bandwidth</span>
-            <button class="card-action">Last 24h ${I.chevDown(12)}</button>
-          </div>
-          <div class="stat-big" style="font-size:48px">
-            128<span style="font-size:18px;color:var(--ink-3);font-family:var(--font-mono);margin-left:4px">GB</span>
-          </div>
-          <div class="stat-foot">Avg 5.4 GB/h · Peak at 14:00</div>
-          <div class="donut-wrap">
-            ${donut}
-            <div class="donut-legend">
-              <div class="row"><span class="swatch" style="background:var(--ink)"></span> Proxy traffic · 64%</div>
-              <div class="row"><span class="swatch" style="background:rgba(0,0,0,0.2)"></span> Game assets · 22%</div>
-              <div class="row"><span class="swatch" style="background:rgba(0,0,0,0.1)"></span> Other · 14%</div>
+          <div class="lobby-hero-meta">
+            <div class="lobby-eyebrow"><span class="led on"></span> FEATURED · TODAY</div>
+            <div class="lobby-hero-title">Tetris</div>
+            <div class="lobby-hero-desc">A clean, distraction-free build of the classic. Loads in under a second on locked-down WiFi.</div>
+            <div class="lobby-hero-stats">
+              <div><span class="k">Plays today</span><span class="v">1,248</span></div>
+              <div><span class="k">Avg session</span><span class="v">7m 12s</span></div>
+              <div><span class="k">Status</span><span class="v">Online</span></div>
+            </div>
+            <div class="lobby-hero-actions">
+              <button class="btn btn-primary" data-action="launch-session">${I.play(14)} Play now</button>
+              <button class="btn">${I.users(14)} Invite Juno</button>
+              <button class="btn">${I.star(14)} Save</button>
             </div>
           </div>
         </div>
-        <div class="card" style="grid-column:span 2">
-          <div class="card-head">
-            <span class="card-title">Active sessions</span>
-            <button class="card-action">${I.filter(12)} Filter</button>
-          </div>
-          ${sessions.map(r => `
-            <div class="detail-row" style="padding-left:0;padding-right:0">
-              <div class="num">${String(r.n).padStart(2,'0')}</div>
-              <div class="name">${esc(r.name)}</div>
-              <div class="meta">${esc(r.host)}</div>
-              <div class="meta">${esc(r.up)}</div>
-              <div class="meta" style="color:var(--ink-2)">${esc(r.state)}</div>
-              <button class="card-action">${I.more(14)}</button>
-            </div>`).join('')}
+
+        <!-- Quick play strip -->
+        <div class="lobby-section-h">
+          <span>Quick play</span>
+          <button class="card-action" data-action="go-catalog">See all ${I.arrow(12)}</button>
         </div>
+        <div class="lobby-row">
+          ${featured.map(g => `
+            <button class="lobby-game" data-action="launch-item" data-name="${esc(g.name)}" data-meta="${esc(g.meta)}">
+              <div class="lobby-game-art">
+                <span class="lobby-game-glyph">${g.glyph}</span>
+                ${g.hot ? '<span class="lobby-game-hot">HOT</span>' : ''}
+              </div>
+              <div class="lobby-game-name">${esc(g.name)}</div>
+              <div class="lobby-game-meta">
+                <span>${esc(g.tag)}</span>
+                <span class="dotsep">·</span>
+                <span>${esc(g.plays)} plays</span>
+              </div>
+            </button>`).join('')}
+        </div>
+
+        <!-- Proxy picker + Friends -->
+        <div class="lobby-split">
+          <div class="lobby-card">
+            <div class="lobby-card-h">
+              <span>Proxies</span>
+              <span class="lobby-card-sub">Tap one to set as default</span>
+            </div>
+            ${proxies.map(p => `
+              <button class="proxy-row ${S.activeProxy===p.id?'active':''}" data-action="set-proxy" data-id="${p.id}">
+                <div class="proxy-led ${p.status}"><span></span></div>
+                <div class="proxy-meta">
+                  <div class="proxy-name">${esc(p.name)}</div>
+                  <div class="proxy-region">${esc(p.region)}</div>
+                </div>
+                <div class="proxy-bars">
+                  ${[0,1,2,3].map(i => `<span class="${p.load > (i+1)*20 ? 'on' : ''}"></span>`).join('')}
+                </div>
+                <div class="proxy-ping">
+                  <div class="v">${p.ping}<span>ms</span></div>
+                  <div class="k">ping</div>
+                </div>
+              </button>`).join('')}
+          </div>
+
+          <div class="lobby-card">
+            <div class="lobby-card-h">
+              <span>Friends in lobby</span>
+              <span class="lobby-card-sub">${friends.filter(f=>f.s==='online').length} online</span>
+            </div>
+            ${friends.map(f => `
+              <div class="friend-row">
+                <div class="comms-avatar" style="width:32px;height:32px;font-size:13px">
+                  ${esc(f.n[0])}<span class="presence ${f.s}"></span>
+                </div>
+                <div class="friend-meta">
+                  <div class="friend-name">${esc(f.n)}</div>
+                  <div class="friend-doing">${esc(f.doing)}</div>
+                </div>
+                <button class="btn" style="padding:6px 10px;font-size:12px">${I.bolt(12)} Join</button>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Recent + What's new -->
+        <div class="lobby-split">
+          <div class="lobby-card">
+            <div class="lobby-card-h">
+              <span>Pick up where you left off</span>
+              <span class="lobby-card-sub">Recent</span>
+            </div>
+            ${recent.map(r => `
+              <button class="recent-row" data-action="launch-item" data-name="${esc(r.n)}" data-meta="${esc(r.kind)}">
+                <div class="recent-glyph">${glyphFor(r.kind)}</div>
+                <div class="recent-meta">
+                  <div class="recent-name">${esc(r.n)}</div>
+                  <div class="recent-kind">${esc(r.kind)} · ${esc(r.ago)}</div>
+                </div>
+                <div class="recent-resume">${I.play(12)} Resume</div>
+              </button>`).join('')}
+          </div>
+
+          <div class="lobby-card lobby-news">
+            <div class="lobby-card-h">
+              <span>What's new</span>
+              <span class="lobby-card-sub">v3.0 · 2026.05</span>
+            </div>
+            <div class="news-item">
+              <div class="news-tag">NEW</div>
+              <div><div class="news-h">Sandbox profiles</div><div class="news-d">Four new disposable browsing profiles with their own proxies.</div></div>
+            </div>
+            <div class="news-item">
+              <div class="news-tag">FIX</div>
+              <div><div class="news-h">Ultraviolet handshake</div><div class="news-d">Stale connections now drop in 8s instead of 42s.</div></div>
+            </div>
+            <div class="news-item">
+              <div class="news-tag">+4</div>
+              <div><div class="news-h">Catalog additions</div><div class="news-d">Tetris, 2048, Snake, and Speed Test joined this week.</div></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>`;
   }
@@ -1180,6 +1281,11 @@
 
       case 'log-filter':
         S.logFilter = val;
+        render();
+        break;
+
+      case 'set-proxy':
+        S.activeProxy = btn.dataset.id;
         render();
         break;
 
