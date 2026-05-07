@@ -59,7 +59,10 @@
         }
         var BARE_URL = 'https://balanced-amazement-production-c715.up.railway.app/';
         var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
-        conn.setTransport('/transport/bare-mod-transport.mjs', [{ bare: BARE_URL }]);
+        // bare-as-module3's Client constructor takes a plain URL string,
+        // NOT a { bare: url } object. setTransport spreads the args array
+        // into the constructor, so pass [bareUrlString].
+        conn.setTransport('/transport/bare-mod-transport.mjs', [BARE_URL]);
         window.__agentizBareReady = true;
       } catch (err) {
         console.warn('[agentiz] BareMux init failed:', err);
