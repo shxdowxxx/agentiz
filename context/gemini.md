@@ -1,51 +1,63 @@
 ---
-session_id: SIZ-20260506-2200
-date: 2026-05-06
-time: 22:00 UTC
+session_id: SIZ-20260507-1200
+date: 2026-05-07
+time: 12:00 UTC
 project: Agentiz
 agent: SessionCloseoutAgent
-current_phase: Phase 3 — Rebuild (Pending)
+current_phase: Phase 3 — Frontend Complete, Proxy + Auth Integrated
 ---
 
 # Gemini Context — Agentiz
 
 ## Project Identity
-Agentiz is a school filter-bypassing web proxy. Static web app (no Node/Electron) deployed to AWS S3. The project was wiped on 2026-05-06 after the Phase 2 UV + bare-mux proxy stack proved unfixable. The repo and S3 bucket are now empty and ready for a clean rebuild.
+Agentiz is a school filter-bypassing web proxy. Static web app — no framework, no build step — deployed to AWS S3. The frontend is a vanilla HTML/CSS/JS SPA. The proxy engine is Ultraviolet v3.2.10 + epoxy-transport v3.0.1 + bare-mux v2.1.9, routed through a Railway bare server.
 
-## Current State (as of 2026-05-06)
-- Local repo `/home/itzzzshxdow/agentiz/` contains only `.git`.
-- GitHub `shxdowxxx/agentiz` main is at wipe commit `4d66abf`.
-- S3 bucket `agentiz` (us-east-1, account 329435595007) is empty, website hosting active.
-- Railway bare server is live and must be preserved: `https://balanced-amazement-production-c715.up.railway.app/` (bare v1/v2/v3).
+## Current State (as of 2026-05-07)
+- Local repo: `/home/itzzzshxdow/agentiz/`
+- Files: `index.html`, `style.css` (~1900 lines), `app.js` (~2100 lines), `sw.js`
+- GitHub `shxdowxxx/agentiz` main at `2c979c5`
+- S3 bucket `agentiz` (us-east-1, account 329435595007) — deploy.sh not run this session, state unknown
+- Railway bare server live: `https://balanced-amazement-production-c715.up.railway.app/`
+- Firebase project: `agentiz-b18ad` (Google + email/password auth, Firestore settings sync)
 
-## Why It Was Wiped
-Phase 2 used UV v3 + bare-mux v2.1.6 + KoopBin's epoxy-transport. The combination is broken:
-- `epoxy-transport.mjs` (KoopBin version) is incompatible with bare-mux v2.1.6 — throws `headers is not iterable`.
-- bare-mux cannot be removed: UV v3 uses `BroadcastChannel("bare-mux")` internally.
-- ESM transport loaded but proxy still returned 500 errors.
-- Director chose clean wipe over continued patching.
+## Proxy Stack
+- Ultraviolet v3.2.10 from jsDelivr
+- epoxy-transport v3.0.1 from jsDelivr — fixes `headers is not iterable` from Phase 2
+- bare-mux v2.1.9 from jsDelivr
+- Service worker: `sw.js` using `UVServiceWorker` + `sw.route()`/`sw.fetch()`
+- Bare server: `https://balanced-amazement-production-c715.up.railway.app/`
+- Proxy UI: slide-in overlay with chrome bar and URL history
 
-## Hard Constraints for Rebuild
-1. All proxy navigation must go through a full-screen iframe — never `window.location.href = '/s/...'` (causes S3 403 before SW can intercept).
-2. Transport module must be native ESM — bare-mux `setTransport` uses `import()` + `{default:T}`. UMD builds fail.
-3. bare-mux is required when using UV v3.
+## Hard Constraints (from Phase 2 learnings)
+1. Never `window.location.href` for proxy navigation — causes S3 403 before SW can intercept. Use full-screen iframe only.
+2. Transport must be native ESM — `setTransport` uses `import(url)` + `{default:T}`. UMD fails.
+3. bare-mux is required for UV v3 — cannot be removed.
+4. Proxy requires HTTPS — test via S3 or GitHub Pages, never file://.
 
-## Recommended Approach
-Use Scramjet (the engine LucideProxy/KoopBin actually run) or a proven reference implementation (Holy Unblocker, Nebula). Do not hand-assemble UV v3 transport wiring again. Confirm a minimal proxy works before adding UI.
+## App Architecture
+- 9 views: Welcome, Lobby/Dashboard, Catalog, Communications, Ageniuz AI, Activity Log, Sandbox, Settings, Credits
+- Games: Lumin SDK from `cdn.jsdelivr.net/gh/luminsdk/script@latest/lumin.min.js`
+- Auth: Firebase `agentiz-b18ad` — Google + email/password
+- Settings synced to Firestore `users/{uid}`
 
-## Lumin SDK (Games)
-Script: `https://cdn.jsdelivr.net/gh/luminsdk/script@latest/lumin.min.js`
+## Lumin SDK
 - `const inst = new Lumin()`
 - `await inst.init({ headless: true, onReady, onError })`
 - `const { games, pages } = await inst.getGames({ page, limit, q })`
 - `const blobUrl = await inst.getImageUrl(game.image_token)`
 - `const { url } = await inst.getGameUrl(game.id)` → iframe src
-- Filter-safe: jsDelivr CDN is categorized as Education on all major filters.
+
+## What's Not Done Yet
+- Proxy untested end-to-end in browser
+- Firestore security rules for `users` collection not written
+- Comms/friends system is static mock data
+- S3 not deployed this session
 
 ## Infrastructure
 - Railway bare server: `https://balanced-amazement-production-c715.up.railway.app/` — do not delete
-- S3 bucket `agentiz` (us-east-1, account 329435595007) — empty, ready
+- S3 bucket: `agentiz` (us-east-1, account 329435595007)
 - Unused `agentiz-organization` bucket — safe to delete
+- Deploy script: `agentiz/deploy.sh`
 
 ## Session Docs
 `agentiz/context/` and `agentiz/summaries/` — commit at every closeout.
