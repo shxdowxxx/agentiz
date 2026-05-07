@@ -9,7 +9,7 @@
   <meta name="robots" content="index,follow" />
   <meta name="rating" content="general" />
   <title>Agentiz</title>
-  <link rel="icon" type="image/png" href="/icon.png" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,7 +21,7 @@
     (function() {
       try {
         var presets = {
-          default: { t: 'Agentiz', f: '/icon.png' },
+          default: { t: 'Agentiz', f: '/favicon.svg' },
           google:  { t: 'Google',  f: 'https://www.google.com/favicon.ico' },
           gclass:  { t: 'Classes', f: 'https://ssl.gstatic.com/classroom/favicon.png' },
           canvas:  { t: 'Dashboard', f: 'https://du11hjcvx0uqb.cloudfront.net/dist/images/favicon-e10d657a73.ico' },
@@ -47,82 +47,6 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- BareMux setup — must run BEFORE the SW handles its first proxied
-       request, which means before any iframe nav. Loaded synchronously
-       so window.BareMux is defined by the time React boots. -->
-  <script src="/transport/bare-mux.js"></script>
-  <script>
-    (function () {
-      if (!('serviceWorker' in navigator)) return;
-      if (!window.BareMux || !window.BareMux.BareMuxConnection) {
-        console.warn('[agentiz] BareMux global missing — proxy will not work');
-        return;
-      }
-
-      // Public Wisp servers, tried in order. Each one is a real wisp
-      // backend (verified via WS handshake + first wisp packet).
-      // If one is blocked by a network filter the page transparently
-      // moves to the next.
-      var WISP_CANDIDATES = [
-        'wss://anura.pro/',
-        'wss://wisp.terbiumon.top/wisp/',
-        'wss://terbiumon.top/wisp/',
-        'wss://anura.pro/wisp/',
-      ];
-
-      function probeWisp(url, timeoutMs) {
-        return new Promise(function (resolve) {
-          var ws, timer, done = false;
-          function finish(ok) {
-            if (done) return; done = true;
-            try { ws && ws.close(); } catch (_) {}
-            clearTimeout(timer);
-            resolve(ok);
-          }
-          try { ws = new WebSocket(url); } catch (_) { return resolve(false); }
-          ws.binaryType = 'arraybuffer';
-          timer = setTimeout(function () { finish(false); }, timeoutMs);
-          // Any binary frame from the server == it's actually wisp.
-          ws.addEventListener('message', function (e) {
-            if (e.data instanceof ArrayBuffer && e.data.byteLength > 0) finish(true);
-          });
-          ws.addEventListener('error', function () { finish(false); });
-          ws.addEventListener('close', function () { finish(false); });
-        });
-      }
-
-      function setTransport(wispUrl) {
-        try {
-          var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
-          conn.setTransport('/relay/epoxy-transport.mjs', [{ wisp: wispUrl }]);
-          window.__agentizWispUrl = wispUrl;
-          console.info('[agentiz] wisp transport set →', wispUrl);
-        } catch (err) {
-          console.warn('[agentiz] setTransport failed:', err);
-        }
-      }
-
-      // Optimistic first pick — set immediately so SW has a transport
-      // even if probing is slow. Then probe and re-set if needed.
-      setTransport(WISP_CANDIDATES[0]);
-
-      (async function () {
-        for (var i = 0; i < WISP_CANDIDATES.length; i++) {
-          var url = WISP_CANDIDATES[i];
-          var ok = await probeWisp(url, 3000);
-          console.info('[agentiz] wisp probe', url, ok ? 'OK' : 'FAIL');
-          if (ok) {
-            if (window.__agentizWispUrl !== url) setTransport(url);
-            window.__agentizWispReady = true;
-            return;
-          }
-        }
-        console.error('[agentiz] all wisp candidates failed — proxy will not work. ' +
-          'Likely cause: network filter is blocking WebSocket connections to known wisp servers.');
-        window.__agentizWispReady = false;
-      })();
-    })();
-  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

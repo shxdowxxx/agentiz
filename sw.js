@@ -1,9 +1,9 @@
-/* Agentiz service worker — UV v3.2.10 + bare-mux */
+/* Agentiz service worker — UV v3.2.10, bare protocol direct to Railway */
 
-// Order matters: bare-mux must load BEFORE UV so UVServiceWorker's
-// `new BareClient()` (no args) finds the BareMux global and uses the
-// transport that the page registered via setTransport().
-importScripts('/transport/bare-mux.js');
+// No BareMux: UV uses its own bundled @tomphttp/bare-client which speaks
+// bare protocol v1/v2/v3 directly to the Railway server defined in
+// core.config.js. The BareMux/epoxy/Wisp stack caused a fatal
+// "headers is not iterable" error in epoxy-transport with bare-mux v2.1.6.
 importScripts('/engine/core.bundle.js');
 importScripts('/engine/core.config.js');
 importScripts('/engine/core.sw.js');

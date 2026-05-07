@@ -70,6 +70,7 @@ $AWS s3 sync . s3://$BUCKET/ \
 # Static files
 $AWS s3 cp privacy.html s3://$BUCKET/privacy.html --content-type "text/html; charset=utf-8"
 $AWS s3 cp manifest.json s3://$BUCKET/manifest.json --content-type "application/json"
+$AWS s3 cp src-app/public/favicon.svg s3://$BUCKET/favicon.svg --content-type "image/svg+xml" --cache-control "public, max-age=86400"
 $AWS s3 cp sitemap.xml s3://$BUCKET/sitemap.xml --content-type "application/xml"
 $AWS s3 cp robots.txt s3://$BUCKET/robots.txt --content-type "text/plain; charset=utf-8"
 $AWS s3 cp humans.txt s3://$BUCKET/humans.txt --content-type "text/plain; charset=utf-8"
