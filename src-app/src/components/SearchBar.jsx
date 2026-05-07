@@ -9,7 +9,13 @@ const ENGINES = [
   { id: 'ddg',    label: 'DuckDuckGo' },
 ];
 
-export default function SearchBar({ onNavigate, proxyReady = true }) {
+const RAW_ENGINES = {
+  google: (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+  bing:   (q) => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+  ddg:    (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+};
+
+export default function SearchBar({ onNavigate, proxyReady = true, forceDirectFallback = false }) {
   const [input, setInput] = useState('');
   const [engine, setEngine] = useState(getSettings().searchEngine || 'google');
   const [focused, setFocused] = useState(false);
@@ -19,12 +25,28 @@ export default function SearchBar({ onNavigate, proxyReady = true }) {
 
   const go = () => {
     const val = input.trim();
-    if (!val || !proxyReady) return;
+    if (!val) return;
+
+    // Direct-mode fallback: if the proxy is unavailable, open the raw URL
+    // in a new tab. This keeps the app useful even when SW is blocked.
+    if (forceDirectFallback || !proxyReady) {
+      if (!forceDirectFallback) return;
+      const direct = isUrl(val)
+        ? (val.startsWith('http') ? val : `https://${val}`)
+        : RAW_ENGINES[engine](val);
+      pushHistory({ url: val, title: val });
+      window.open(direct, '_blank', 'noopener,noreferrer');
+      setInput('');
+      return;
+    }
+
     const dest = isUrl(val) ? proxyUrl(val) : searchUrl(val, engine);
     if (!dest) return;
     pushHistory({ url: val, title: val });
     onNavigate?.(dest);
   };
+
+  const canGo = forceDirectFallback ? !!input.trim() : (proxyReady && !!input.trim());
 
   return (
     <div className="anim-fade-up" style={{ width: '100%', maxWidth: '660px', margin: '0 auto', animationDelay: '180ms' }}>
@@ -85,14 +107,15 @@ export default function SearchBar({ onNavigate, proxyReady = true }) {
           {ENGINES.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
         </select>
 
-        {/* Go button — monochrome */}
-        {!proxyReady ? (
+        {/* Go button — monochrome. In direct-fallback mode, label changes. */}
+        {!proxyReady && !forceDirectFallback ? (
           <div style={{ flexShrink: 0, padding: '9px 14px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-mute)', letterSpacing: '0.06em' }}>
             loading…
           </div>
-        ) : input.trim() ? (
+        ) : canGo ? (
           <button
             onClick={go}
+            title={forceDirectFallback ? 'Opens in a new tab (proxy unavailable)' : 'Open in proxy'}
             style={{
               flexShrink: 0, padding: '9px 16px',
               borderRadius: '9px',
@@ -107,7 +130,7 @@ export default function SearchBar({ onNavigate, proxyReady = true }) {
             onMouseOver={e => { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
             onMouseOut={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
-            Go <Icon name="arrow-right" size={12} stroke={2} />
+            {forceDirectFallback ? 'Open' : 'Go'} <Icon name="arrow-right" size={12} stroke={2} />
           </button>
         ) : null}
       </div>

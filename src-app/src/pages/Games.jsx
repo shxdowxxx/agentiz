@@ -1,94 +1,108 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Icon } from '../lib/icons';
 import { getSettings } from '../lib/storage';
+import { proxyUrl } from '../lib/codec';
+import { isProxyReady } from '../lib/proxy';
 
-const LUMIN_SRC = 'https://a.luminsdk.com/sdk.js';
+// Curated browser-game catalog. Each entry has a direct URL (used as
+// the iframe source when the site allows embedding) and a `proxy: true`
+// flag for sites that block X-Frame-Options — those go through the
+// proxy iframe overlay if the proxy is up, otherwise open in a new tab.
+//
+// All entries are real, free, no-install web games.
+const GAMES = [
+  // === arcade / .io ===
+  { id: 'slither',     title: 'Slither.io',      url: 'https://slither.io',                            tag: 'arcade',   proxy: true  },
+  { id: 'agar',        title: 'Agar.io',         url: 'https://agar.io',                               tag: 'arcade',   proxy: true  },
+  { id: 'krunker',     title: 'Krunker.io',      url: 'https://krunker.io',                            tag: 'shooter',  proxy: true  },
+  { id: 'shellshock',  title: 'Shell Shockers',  url: 'https://shellshock.io',                         tag: 'shooter',  proxy: true  },
+  { id: 'diepio',      title: 'Diep.io',         url: 'https://diep.io',                               tag: 'arcade',   proxy: true  },
+  { id: 'paperio',     title: 'Paper.io 2',      url: 'https://paper-io.com',                          tag: 'arcade',   proxy: true  },
+  { id: 'wormate',     title: 'Wormate.io',      url: 'https://wormate.io',                            tag: 'arcade',   proxy: true  },
+  { id: 'surviv',      title: 'Surviv.io',       url: 'https://surviv.io',                             tag: 'shooter',  proxy: true  },
 
-// Curated game catalog — surfaced via Lumin when the SDK loads.
-// Each entry resolves to a Lumin slug; the SDK launches via `Lumin.play(slug)`.
-const CATALOG = [
-  { slug: 'slither',         title: 'Slither',           tag: 'arcade'   },
-  { slug: 'agar',            title: 'Agar.io',           tag: 'arcade'   },
-  { slug: '2048',            title: '2048',              tag: 'puzzle'   },
-  { slug: 'chess',           title: 'Chess',             tag: 'classic'  },
-  { slug: 'minesweeper',     title: 'Minesweeper',       tag: 'classic'  },
-  { slug: 'pacman',          title: 'Pac-Man',           tag: 'arcade'   },
-  { slug: 'tetris',          title: 'Tetris',            tag: 'puzzle'   },
-  { slug: 'snake',           title: 'Snake',             tag: 'arcade'   },
-  { slug: 'sudoku',          title: 'Sudoku',            tag: 'puzzle'   },
-  { slug: 'solitaire',       title: 'Solitaire',         tag: 'classic'  },
-  { slug: 'flappy',          title: 'Flappy',            tag: 'arcade'   },
-  { slug: 'platformer',      title: 'Sky Runner',        tag: 'arcade'   },
+  // === puzzle ===
+  { id: '2048',        title: '2048',            url: 'https://play2048.co',                           tag: 'puzzle',   proxy: false },
+  { id: 'tetris',      title: 'Tetris',          url: 'https://tetris.com/play-tetris',                tag: 'puzzle',   proxy: true  },
+  { id: 'sudoku',      title: 'Sudoku',          url: 'https://sudoku.com',                            tag: 'puzzle',   proxy: true  },
+  { id: 'minesweeper', title: 'Minesweeper',     url: 'https://minesweeper.online',                    tag: 'puzzle',   proxy: true  },
+  { id: 'lightsout',   title: 'Lights Out',      url: 'https://www.logicgamesonline.com/lightsout/',   tag: 'puzzle',   proxy: false },
+  { id: 'bloxorz',     title: 'Bloxorz',         url: 'https://www.coolmathgames.com/0-bloxorz',       tag: 'puzzle',   proxy: true  },
+  { id: 'unblock',     title: 'Unblock Me',      url: 'https://www.mathsisfun.com/games/unblock.html', tag: 'puzzle',   proxy: false },
+  { id: 'hextris',     title: 'Hextris',         url: 'https://hextris.io',                            tag: 'puzzle',   proxy: false },
+
+  // === classic / strategy ===
+  { id: 'chess',       title: 'Chess',           url: 'https://www.chess.com/play/computer',           tag: 'classic',  proxy: true  },
+  { id: 'lichess',     title: 'Lichess',         url: 'https://lichess.org',                           tag: 'classic',  proxy: true  },
+  { id: 'checkers',    title: 'Checkers',        url: 'https://www.247checkers.com',                   tag: 'classic',  proxy: true  },
+  { id: 'go',          title: 'Go (online-go)',  url: 'https://online-go.com',                         tag: 'classic',  proxy: true  },
+  { id: 'solitaire',   title: 'Solitaire',       url: 'https://www.solitr.com',                        tag: 'classic',  proxy: true  },
+  { id: 'mahjong',     title: 'Mahjong',         url: 'https://www.mahjongtitan.com',                  tag: 'classic',  proxy: true  },
+
+  // === retro / nostalgic ===
+  { id: 'pacman',      title: 'Pac-Man',         url: 'https://www.google.com/logos/2010/pacman10-i.html', tag: 'retro', proxy: true  },
+  { id: 'snake',       title: 'Snake',           url: 'https://www.google.com/fbx?fbx=snake_arcade',   tag: 'retro',    proxy: true  },
+  { id: 'pong',        title: 'Pong',            url: 'https://playpong.io',                           tag: 'retro',    proxy: false },
+  { id: 'asteroids',   title: 'Asteroids',       url: 'https://freeasteroids.org',                     tag: 'retro',    proxy: false },
+  { id: 'spaceinv',    title: 'Space Invaders',  url: 'https://playspaceinvaders.com',                 tag: 'retro',    proxy: false },
+  { id: 'breakout',    title: 'Breakout',        url: 'https://breakout-game.io',                      tag: 'retro',    proxy: false },
+
+  // === platformer / runner ===
+  { id: 'flappy',      title: 'Flappy Bird',     url: 'https://flappybird.io',                         tag: 'arcade',   proxy: false },
+  { id: 'dino',        title: 'T-Rex Runner',    url: 'https://chromedino.com',                        tag: 'arcade',   proxy: false },
+  { id: 'jumpman',     title: 'Vex',             url: 'https://www.coolmathgames.com/0-vex-7',         tag: 'platform', proxy: true  },
+  { id: 'fireboy',     title: 'Fireboy & Watergirl', url: 'https://www.coolmathgames.com/0-fireboy-watergirl-forest-temple', tag: 'platform', proxy: true },
+
+  // === word / typing ===
+  { id: 'wordle',      title: 'Wordle',          url: 'https://wordlegame.org',                        tag: 'word',     proxy: false },
+  { id: 'typeracer',   title: 'TypeRacer',       url: 'https://play.typeracer.com',                    tag: 'typing',   proxy: true  },
+  { id: 'monkeytype',  title: 'Monkeytype',      url: 'https://monkeytype.com',                        tag: 'typing',   proxy: false },
+  { id: 'crossword',   title: 'Crossword',       url: 'https://www.boatloadpuzzles.com/playcrossword', tag: 'word',     proxy: true  },
+
+  // === simulation / sandbox ===
+  { id: 'powder',      title: 'Powder Game',     url: 'https://dan-ball.jp/en/javagame/dust2/',        tag: 'sandbox',  proxy: true  },
+  { id: 'sandtetris',  title: 'Sandtrix',        url: 'https://sandtrix.fly.dev',                      tag: 'sandbox',  proxy: false },
+  { id: 'lifegame',    title: 'Game of Life',    url: 'https://playgameoflife.com',                    tag: 'sandbox',  proxy: false },
+
+  // === multiplayer / fun ===
+  { id: 'skribbl',     title: 'Skribbl.io',      url: 'https://skribbl.io',                            tag: 'multi',    proxy: true  },
+  { id: 'gartic',      title: 'Gartic Phone',    url: 'https://garticphone.com',                       tag: 'multi',    proxy: true  },
+  { id: 'kahoot',      title: 'Kahoot',          url: 'https://kahoot.it',                             tag: 'multi',    proxy: true  },
 ];
 
-function loadLumin() {
-  return new Promise((resolve, reject) => {
-    if (window.Lumin) return resolve(window.Lumin);
-    const existing = document.querySelector('script[data-lumin]');
-    if (existing) {
-      existing.addEventListener('load',  () => resolve(window.Lumin));
-      existing.addEventListener('error', reject);
-      return;
-    }
-    const s = document.createElement('script');
-    s.src = LUMIN_SRC;
-    s.async = true;
-    s.dataset.lumin = '1';
-    s.onload  = () => resolve(window.Lumin);
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
-}
+const TAGS = ['all', 'arcade', 'puzzle', 'classic', 'retro', 'platform', 'shooter', 'word', 'typing', 'sandbox', 'multi'];
 
 export default function Games() {
   const settings = getSettings();
-  const enabled = settings.proxyGames !== false && settings.proxyEnabled !== false;
+  const enabled  = settings.proxyGames !== false;
+  const proxyOk  = isProxyReady() && settings.proxyEnabled !== false;
 
-  const [status, setStatus]   = useState(enabled ? 'init' : 'disabled');
+  const [filter, setFilter]   = useState('all');
+  const [query,  setQuery]    = useState('');
   const [active, setActive]   = useState(null);
-  const [error,  setError]    = useState(null);
-  const stageRef = useRef(null);
 
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
-
-    loadLumin()
-      .then((Lumin) => {
-        if (cancelled || !Lumin) return;
-        try {
-          Lumin.init({
-            headless: true,
-            onReady: () => { if (!cancelled) setStatus('ready'); },
-            onError: (err) => {
-              if (cancelled) return;
-              setError(err?.message || 'Engine error');
-              setStatus('error');
-            },
-          });
-        } catch (err) {
-          setError(err?.message || 'Init failed');
-          setStatus('error');
-        }
-      })
-      .catch(() => { if (!cancelled) { setStatus('offline'); setError('SDK unavailable'); } });
-
-    return () => { cancelled = true; };
-  }, [enabled]);
+  const visible = useMemo(() => GAMES.filter(g =>
+    (filter === 'all' || g.tag === filter) &&
+    (!query || g.title.toLowerCase().includes(query.toLowerCase()))
+  ), [filter, query]);
 
   const launch = (game) => {
-    setActive(game);
-    if (window.Lumin?.play) {
-      try { window.Lumin.play(game.slug, { mount: stageRef.current }); }
-      catch (err) { setError(err?.message || 'Launch failed'); }
+    // Direct-embed games (proxy:false) are loaded inline in our overlay.
+    // Sites that block embedding (proxy:true) need the proxy iframe, OR
+    // open in a new tab if proxy is unavailable.
+    if (!game.proxy) {
+      setActive({ ...game, embedUrl: game.url });
+      return;
     }
-  };
-
-  const close = () => {
-    setActive(null);
-    if (window.Lumin?.stop) {
-      try { window.Lumin.stop(); } catch {}
+    if (proxyOk) {
+      const dest = proxyUrl(game.url);
+      if (dest) {
+        window.dispatchEvent(new CustomEvent('agentiz:open-frame', { detail: { url: dest } }));
+        return;
+      }
     }
+    // Fallback — new tab.
+    window.open(game.url, '_blank', 'noopener,noreferrer');
   };
 
   if (!enabled) {
@@ -108,11 +122,11 @@ export default function Games() {
   }
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
-      <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '30px', gap: '16px', flexWrap: 'wrap' }}>
+    <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '40px 20px 80px' }}>
+      <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '28px', gap: '16px', flexWrap: 'wrap' }}>
         <div>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-mute)' }}>
-            Module · Lumin
+            Module · Arcade
           </p>
           <h1 className="chrome-text" style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(28px, 4vw, 40px)', letterSpacing: '0.06em', fontWeight: 500, marginTop: '4px' }}>
             Games
@@ -120,34 +134,68 @@ export default function Games() {
         </div>
         <div className="glass" style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
-          padding: '8px 14px', borderRadius: '999px',
+          padding: '7px 14px', borderRadius: '999px',
           fontFamily: 'var(--font-mono)', fontSize: '11px',
           color: 'var(--text-dim)', letterSpacing: '0.1em',
         }}>
-          <span style={{
-            width: '8px', height: '8px', borderRadius: '50%',
-            background:
-              status === 'ready'    ? 'var(--silver)'    :
-              status === 'error'    ? 'var(--text-mute)' :
-              status === 'offline'  ? 'var(--text-mute)' : 'var(--silver-2)',
-            boxShadow: status === 'ready' ? '0 0 8px var(--glow-strong)' : 'none',
-            animation: status === 'init' ? 'spin 1.2s linear infinite' : 'none',
-          }} />
-          {status.toUpperCase()}
+          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--silver)', boxShadow: '0 0 6px var(--glow-strong)' }} />
+          {visible.length} TITLES
         </div>
       </header>
 
-      {error && (
-        <div className="glass" style={{ padding: '12px 16px', borderRadius: '10px', marginBottom: '20px', fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-          ⚠ {error}
+      {/* Filter row */}
+      <div className="glass" style={{
+        display: 'flex', alignItems: 'center', gap: '12px',
+        padding: '10px 14px', borderRadius: '12px', marginBottom: '24px',
+        flexWrap: 'wrap',
+      }}>
+        <span style={{ color: 'var(--silver-2)', display: 'inline-flex', flexShrink: 0 }}>
+          <Icon name="search" size={15} />
+        </span>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search games…"
+          style={{
+            flex: 1, minWidth: '180px',
+            border: 'none', outline: 'none', background: 'transparent',
+            color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: '13.5px',
+            padding: '6px 0',
+          }}
+        />
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+          {TAGS.map(t => {
+            const active = filter === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setFilter(t)}
+                style={{
+                  padding: '6px 11px',
+                  borderRadius: '7px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10.5px',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  border: `1px solid ${active ? 'var(--border-3)' : 'var(--border)'}`,
+                  background: active ? 'var(--surface-2)' : 'transparent',
+                  color: active ? 'var(--text)' : 'var(--text-mute)',
+                  cursor: 'pointer',
+                  transition: 'all 0.12s',
+                }}
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* Game grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '14px' }}>
-        {CATALOG.map((g, i) => (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+        {visible.map((g, i) => (
           <button
-            key={g.slug}
+            key={g.id}
             onClick={() => launch(g)}
             className="tile-btn glass anim-fade-up"
             style={{
@@ -156,8 +204,8 @@ export default function Games() {
               borderRadius: '14px',
               cursor: 'pointer',
               textAlign: 'left',
-              animationDelay: `${i * 36}ms`,
-              minHeight: '140px',
+              animationDelay: `${Math.min(i, 14) * 26}ms`,
+              minHeight: '142px',
             }}
           >
             <div style={{
@@ -174,21 +222,27 @@ export default function Games() {
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>
                 {g.title}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.1em', color: 'var(--text-mute)', textTransform: 'uppercase', marginTop: '2px' }}>
-                {g.tag}
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.1em', color: 'var(--text-mute)', textTransform: 'uppercase', marginTop: '3px' }}>
+                {g.tag}{g.proxy ? ' · proxy' : ''}
               </div>
             </div>
           </button>
         ))}
       </div>
 
-      {/* Lumin stage overlay */}
+      {visible.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-mute)', fontSize: '13px' }}>
+          No games match.
+        </div>
+      )}
+
+      {/* In-place game player overlay (for embed-friendly games) */}
       {active && (
         <div
           className="anim-fade-in"
           style={{
             position: 'fixed', inset: 0, zIndex: 4000,
-            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+            background: 'rgba(0,0,0,0.86)', backdropFilter: 'blur(8px)',
             display: 'flex', flexDirection: 'column',
           }}
         >
@@ -199,13 +253,28 @@ export default function Games() {
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>
               {active.title.toUpperCase()}
             </span>
-            <button className="icon-btn" onClick={close} title="Close game">
-              <Icon name="close" size={14} />
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <a
+                href={active.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="icon-btn"
+                style={{ width: 'auto', padding: '0 12px', gap: '6px', fontSize: '12px', textDecoration: 'none' }}
+                title="Open in new tab"
+              >
+                <Icon name="arrow-right" size={13} /> open
+              </a>
+              <button className="icon-btn" onClick={() => setActive(null)} title="Close">
+                <Icon name="close" size={14} />
+              </button>
+            </div>
           </div>
-          <div ref={stageRef} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-mute)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-            {status !== 'ready' ? 'Engine not ready — please wait' : `Loading ${active.title}…`}
-          </div>
+          <iframe
+            src={active.embedUrl}
+            style={{ flex: 1, border: 'none', width: '100%', background: '#fff' }}
+            allow="fullscreen; autoplay; clipboard-read; clipboard-write"
+            title={active.title}
+          />
         </div>
       )}
     </div>

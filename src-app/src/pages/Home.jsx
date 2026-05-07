@@ -3,40 +3,44 @@ import SearchBar from '../components/SearchBar';
 import QuickTiles from '../components/QuickTiles';
 import RecentHistory from '../components/RecentHistory';
 import Bookmarks from '../components/Bookmarks';
-import { onProxyChange, getProxyError } from '../lib/proxy';
+import { onProxyChange } from '../lib/proxy';
 import { getSettings } from '../lib/storage';
 import { Icon } from '../lib/icons';
 
 const STATUS_LABEL = {
-  init:         'INIT',
-  registering:  'REGISTERING',
-  reloading:    'RELOADING',
-  ready:        'READY',
-  unsupported:  'UNSUPPORTED',
-  error:        'ERROR',
+  init:        'INIT',
+  registering: 'REGISTERING',
+  reloading:   'RELOADING',
+  ready:       'READY',
+  unsupported: 'UNSUPPORTED',
+  insecure:    'INSECURE',
+  blocked:     'BLOCKED',
+  error:       'ERROR',
 };
 
-const STATUS_TONE = {
-  ready:       'var(--silver)',
-  registering: 'var(--silver-2)',
-  reloading:   'var(--silver-2)',
-  init:        'var(--silver-2)',
-  unsupported: 'var(--text-mute)',
-  error:       'var(--text-mute)',
+const STATUS_HELP = {
+  unsupported: 'This browser/context does not expose the Service Worker API.',
+  insecure:    'The page is loaded over http:// — service workers require https.',
+  blocked:     'A network filter or extension is blocking the proxy worker.',
+  error:       'The proxy worker failed to register. See details below.',
 };
 
 export default function Home() {
   const proxyEnabled = getSettings().proxyEnabled !== false;
-  const [proxy, setProxy] = useState({ status: 'init', ready: false, err: null });
+  const [proxy, setProxy] = useState({ status: 'init', ready: false, err: null, diag: null });
 
-  useEffect(() => {
-    return onProxyChange(setProxy);
-  }, []);
+  useEffect(() => onProxyChange(setProxy), []);
 
   const navigate = (dest) => window.dispatchEvent(new CustomEvent('agentiz:open-frame', { detail: { url: dest } }));
 
-  const isReady = proxy.ready && proxy.status === 'ready';
-  const tone    = STATUS_TONE[proxy.status] || 'var(--silver-2)';
+  const isReady   = proxy.ready && proxy.status === 'ready';
+  const isWorking = proxy.status === 'init' || proxy.status === 'registering' || proxy.status === 'reloading';
+  const showError = !isReady && !isWorking;
+
+  const tone =
+    isReady   ? 'var(--silver)'    :
+    isWorking ? 'var(--silver-2)'  :
+                'var(--text-mute)';
 
   return (
     <div style={{ maxWidth: '780px', margin: '0 auto', padding: '60px 20px 96px' }}>
@@ -54,13 +58,10 @@ export default function Home() {
           agentiz
         </h1>
 
-        {/* SW status badge — visible state for the proxy */}
         <div
           className="anim-fade-up"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
             padding: '5px 12px',
             borderRadius: '999px',
             border: '1px solid var(--border-2)',
@@ -80,45 +81,85 @@ export default function Home() {
               width: '7px', height: '7px', borderRadius: '50%',
               background: tone,
               boxShadow: isReady ? `0 0 8px ${tone}` : 'none',
-              animation: (proxy.status === 'registering' || proxy.status === 'init' || proxy.status === 'reloading') ? 'spin 1.2s linear infinite' : 'none',
+              animation: isWorking ? 'spin 1.2s linear infinite' : 'none',
             }}
           />
           PROXY · {STATUS_LABEL[proxy.status] || proxy.status.toUpperCase()}
         </div>
 
-        <SearchBar proxyReady={isReady && proxyEnabled} onNavigate={navigate} />
+        <SearchBar
+          proxyReady={isReady && proxyEnabled}
+          forceDirectFallback={showError}
+          onNavigate={navigate}
+        />
       </div>
 
-      {/* Error helper */}
-      {proxy.status === 'error' && (
+      {showError && proxy.diag && (
         <div
           className="glass anim-fade-up"
           style={{
             maxWidth: '660px', margin: '0 auto 32px',
-            padding: '14px 18px', borderRadius: '12px',
-            display: 'flex', gap: '12px', alignItems: 'flex-start',
-            color: 'var(--text-dim)', fontSize: '12.5px', lineHeight: 1.5,
+            padding: '16px 20px', borderRadius: '12px',
+            color: 'var(--text-dim)', fontSize: '12.5px', lineHeight: 1.55,
           }}
         >
-          <span style={{ color: 'var(--silver-2)', flexShrink: 0, marginTop: '2px' }}>
-            <Icon name="alert" size={14} />
-          </span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>
-              Proxy did not start.
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-mute)', marginBottom: '8px' }}>
-              {proxy.err?.message || 'Unknown service-worker error.'}
-            </div>
-            <div>
-              Try a hard refresh (<span className="kbd-chip">Ctrl+Shift+R</span>) or open this site in a private window. If your browser blocks service workers (rare), the proxy cannot run.
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '12px' }}>
+            <span style={{ color: 'var(--silver-2)', flexShrink: 0, marginTop: '2px' }}>
+              <Icon name="alert" size={14} />
+            </span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>
+                Proxy unavailable.
+              </div>
+              <div>{STATUS_HELP[proxy.status] || 'Unknown service-worker error.'}</div>
             </div>
           </div>
+
+          {/* Diagnostic — copy-paste friendly */}
+          <div style={{
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            padding: '10px 12px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10.5px',
+            color: 'var(--text-mute)',
+            letterSpacing: '0.02em',
+            marginBottom: '10px',
+            wordBreak: 'break-all',
+          }}>
+            <div>status      = {proxy.status}</div>
+            <div>secure ctx  = {String(proxy.diag.secure)}</div>
+            <div>origin      = {proxy.diag.origin}</div>
+            <div>protocol    = {proxy.diag.protocol}</div>
+            <div>sw api      = {String(proxy.diag.swApi)}</div>
+            <div>in iframe   = {String(proxy.diag.inIframe)}</div>
+            {proxy.err?.message && <div>error       = {proxy.err.message}</div>}
+          </div>
+
+          {proxy.status === 'insecure' && proxy.diag.protocol === 'http:' && (
+            <a
+              href={`https://${proxy.diag.host}${location.pathname}${location.search}${location.hash}`}
+              style={{
+                display: 'inline-block', padding: '8px 14px', borderRadius: '8px',
+                background: 'var(--text)', color: 'var(--bg)',
+                fontFamily: 'var(--font-sans)', fontSize: '12px', fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Switch to https
+            </a>
+          )}
+          {proxy.status !== 'insecure' && (
+            <div style={{ fontSize: '11.5px', color: 'var(--text-mute)' }}>
+              Try a hard refresh (<span className="kbd-chip">Ctrl+Shift+R</span>), or open in a fresh tab. The search bar below still works in <strong>direct mode</strong> — links open in a new tab without the proxy.
+            </div>
+          )}
         </div>
       )}
 
       <div style={{ marginBottom: '40px' }}>
-        <QuickTiles proxyReady={isReady && proxyEnabled} onNavigate={navigate} />
+        <QuickTiles proxyReady={isReady && proxyEnabled} forceDirectFallback={showError} onNavigate={navigate} />
       </div>
 
       <div style={{ marginBottom: '32px' }}>

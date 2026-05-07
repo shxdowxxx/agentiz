@@ -12,8 +12,12 @@ const TILES = [
   { id: 'chatgpt',   label: 'ChatGPT',     url: 'https://chat.openai.com',        icon: 'sparkle' },
 ];
 
-export default function QuickTiles({ proxyReady = true, onNavigate }) {
+export default function QuickTiles({ proxyReady = true, forceDirectFallback = false, onNavigate }) {
   const launch = (tile) => {
+    if (forceDirectFallback) {
+      window.open(tile.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
     if (!proxyReady) return;
     const dest = proxyUrl(tile.url);
     if (dest) onNavigate?.(dest);
