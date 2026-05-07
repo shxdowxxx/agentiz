@@ -43,7 +43,15 @@ $AWS s3 sync transport/ s3://$BUCKET/transport/ \
   --content-type "application/javascript" \
   --cache-control "public, max-age=3600" \
   --exclude "*" --include "*.mjs"
-$AWS s3 sync relay/ s3://$BUCKET/relay/ --content-type "application/javascript"
+# Relay — epoxy transport (.mjs needs javascript MIME too)
+$AWS s3 sync relay/ s3://$BUCKET/relay/ \
+  --content-type "application/javascript" \
+  --cache-control "public, max-age=3600" \
+  --exclude "*.mjs"
+$AWS s3 sync relay/ s3://$BUCKET/relay/ \
+  --content-type "application/javascript" \
+  --cache-control "public, max-age=3600" \
+  --exclude "*" --include "*.mjs"
 $AWS s3 sync netfetch/ s3://$BUCKET/netfetch/ --content-type "application/javascript"
 
 # Service workers (no-cache required)

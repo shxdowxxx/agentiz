@@ -57,13 +57,14 @@
           console.warn('[agentiz] BareMux global missing — proxy will not work');
           return;
         }
-        var BARE_URL = 'https://balanced-amazement-production-c715.up.railway.app/';
+        // Switched from bare-as-module3 → epoxy + wisp.
+        // Epoxy uses WebSocket-Wisp protocol — no per-IP keep-alive
+        // limit, ~5–10x faster, and the public Wisp server hosted by
+        // MercuryWorkshop is free.
+        var WISP_URL = 'wss://wisp.mercurywork.shop/';
         var conn = new window.BareMux.BareMuxConnection('/transport/bare-mux-worker.js');
-        // bare-as-module3's Client constructor takes a plain URL string,
-        // NOT a { bare: url } object. setTransport spreads the args array
-        // into the constructor, so pass [bareUrlString].
-        conn.setTransport('/transport/bare-mod-transport.mjs', [BARE_URL]);
-        window.__agentizBareReady = true;
+        conn.setTransport('/relay/epoxy-transport.mjs', [{ wisp: WISP_URL }]);
+        window.__agentizTransportReady = true;
       } catch (err) {
         console.warn('[agentiz] BareMux init failed:', err);
       }
