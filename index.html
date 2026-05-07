@@ -5,9 +5,15 @@
   <title>Agentiz</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A sandboxed workspace for proxies, games and utilities.">
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- DNS prefetch for external services -->
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+  <link rel="dns-prefetch" href="https://a.luminsdk.com">
+  <link rel="dns-prefetch" href="https://balanced-amazement-production-c715.up.railway.app">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,6 +22,16 @@
     <aside class="sidebar" id="sidebar"></aside>
     <div id="view"></div>
   </div>
+
+  <!-- Firebase (compat v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <!-- UV bundle — exposes Ultraviolet global for URL encoding in main thread -->
+  <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.10/dist/uv.bundle.js"></script>
+  <!-- Lumin SDK — game catalog (hosted on jsDelivr, categorized as Education) -->
+  <script src="https://cdn.jsdelivr.net/gh/luminsdk/script@latest/lumin.min.js"></script>
+
   <script src="app.js"></script>
 </body>
 </html>

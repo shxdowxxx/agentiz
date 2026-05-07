@@ -132,6 +132,20 @@
     'Why is my Ultraviolet session timing out?',
     'Summarize what changed in my catalog this week',
   ];
+
+  // ── Firebase config ────────────────────────────────────────
+  const FB_CONFIG = {
+    apiKey: 'AIzaSyAqPYNbiv0AA6_9FzRDtDRuTOe07_tYDZc',
+    authDomain: 'agentiz-b18ad.firebaseapp.com',
+    projectId: 'agentiz-b18ad',
+    storageBucket: 'agentiz-b18ad.firebasestorage.app',
+    messagingSenderId: '295610165150',
+    appId: '1:295610165150:web:71986c4653b49ebbb6988f',
+    measurementId: 'G-5290NYRV9B',
+  };
+
+  // ── Bare / Railway server ──────────────────────────────────
+  const BARE_URL = 'wss://balanced-amazement-production-c715.up.railway.app/';
   const NAV_PROJECTS = [
     { id:'dashboard', label:'Dashboard',    icon:'panel' },
     { id:'library',   label:'Library',      icon:'layers' },
@@ -185,10 +199,38 @@
     stealth: true,
     decoy: 'school-portal',
     reducedMotion: false,
+    proxyGames: false,
     modal: null,
     _toastTimer: null,
     _countAnim: null,
     _countVal: 0,
+    // Auth
+    authUser: null,
+    authLoading: true,
+    authModal: false,
+    authTab: 'signin',
+    authEmail: '',
+    authPassword: '',
+    authErr: '',
+    // Proxy browser
+    browserOpen: false,
+    browserUrl: '',
+    browserInputUrl: '',
+    browserHistory: [],
+    browserHistoryIdx: -1,
+    browserStatus: 'idle',     // 'idle' | 'loading' | 'ok' | 'err'
+    browserStatusText: 'Enter a URL to browse',
+    proxyReady: false,
+    // Lumin games
+    luminInst: null,
+    luminGames: [],
+    luminThumb: {},
+    luminLoaded: false,
+    luminLoading: false,
+    luminPage: 1,
+    luminPages: 1,
+    luminQuery: '',
+    luminSearch: '',
   };
 
   // Initialise blank threads for other friends
@@ -202,6 +244,291 @@
   }
   function applyTheme() {
     document.getElementById('app').classList.toggle('theme-dark', isDark());
+  }
+
+  // ── Firebase ───────────────────────────────────────────────
+  function initFirebase() {
+    if (!window.firebase) return;
+    firebase.initializeApp(FB_CONFIG);
+
+    firebase.auth().onAuthStateChanged(user => {
+      S.authUser = user;
+      S.authLoading = false;
+      if (user) {
+        // Persist user doc and load their settings
+        firebase.firestore().collection('users').doc(user.uid).set({
+          displayName: user.displayName || '',
+          email: user.email || '',
+          photoURL: user.photoURL || '',
+          lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true }).catch(() => {});
+        loadUserSettings(user.uid);
+      }
+      render();
+      renderSidebar();
+    });
+  }
+
+  function loadUserSettings(uid) {
+    firebase.firestore().collection('users').doc(uid).get().then(doc => {
+      if (!doc.exists) return;
+      const cfg = doc.data().settings || {};
+      if (cfg.appearance) { S.appearance = cfg.appearance; applyTheme(); }
+      if (cfg.proxyGames !== undefined) S.proxyGames = cfg.proxyGames;
+      if (cfg.stealth !== undefined) S.stealth = cfg.stealth;
+      if (cfg.decoy) S.decoy = cfg.decoy;
+      if (cfg.autoclose) S.autoclose = cfg.autoclose;
+      renderSidebar();
+    }).catch(() => {});
+  }
+
+  function saveUserSettings() {
+    if (!S.authUser || !window.firebase) return;
+    firebase.firestore().collection('users').doc(S.authUser.uid).set({
+      settings: {
+        appearance: S.appearance,
+        proxyGames: S.proxyGames,
+        stealth: S.stealth,
+        decoy: S.decoy,
+        autoclose: S.autoclose,
+      }
+    }, { merge: true }).catch(() => {});
+  }
+
+  function authWithGoogle() {
+    if (!window.firebase) return;
+    S.authErr = '';
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+      .then(() => { S.authModal = false; render(); })
+      .catch(e => { S.authErr = e.message; render(); });
+  }
+
+  function authWithEmail(isSignUp) {
+    if (!window.firebase) return;
+    S.authErr = '';
+    const email = S.authEmail.trim();
+    const pass  = S.authPassword;
+    if (!email || !pass) { S.authErr = 'Email and password are required.'; render(); return; }
+    const fn = isSignUp
+      ? firebase.auth().createUserWithEmailAndPassword(email, pass)
+      : firebase.auth().signInWithEmailAndPassword(email, pass);
+    fn.then(() => { S.authModal = false; S.authEmail = ''; S.authPassword = ''; render(); })
+      .catch(e => { S.authErr = e.message; render(); });
+  }
+
+  function authSignOut() {
+    if (!window.firebase) return;
+    firebase.auth().signOut().then(() => {
+      S.authUser = null;
+      S.commsUser = null;
+      render();
+      renderSidebar();
+    });
+  }
+
+  // ── Lumin games ────────────────────────────────────────────
+  async function initLumin() {
+    if (!window.Lumin) return;
+    try {
+      S.luminInst = new Lumin();
+      await new Promise((resolve, reject) => {
+        S.luminInst.init({
+          headless: true,
+          onReady: resolve,
+          onError: reject,
+        });
+      });
+      await loadLuminGames(1, '');
+    } catch (e) {
+      console.warn('[Agentiz] Lumin init failed:', e);
+    }
+  }
+
+  async function loadLuminGames(page, q) {
+    if (!S.luminInst) return;
+    S.luminLoading = true;
+    if (S.rail === 'home') render();
+    try {
+      const { games, pages } = await S.luminInst.getGames({ page, limit: 88, q: q || '' });
+      S.luminGames = games || [];
+      S.luminPages = pages || 1;
+      S.luminPage = page;
+      S.luminQuery = q || '';
+      S.luminLoaded = true;
+      loadLuminThumbs(S.luminGames.slice(0, 20));
+    } catch (e) {
+      console.warn('[Agentiz] Lumin getGames failed:', e);
+    } finally {
+      S.luminLoading = false;
+      if (S.rail === 'home') render();
+    }
+  }
+
+  async function loadLuminThumbs(games) {
+    if (!S.luminInst) return;
+    await Promise.allSettled(games.map(async g => {
+      if (S.luminThumb[g.id]) return;
+      try {
+        S.luminThumb[g.id] = await S.luminInst.getImageUrl(g.image_token);
+      } catch (_) {}
+    }));
+    if (S.rail === 'home') render();
+  }
+
+  function luminTiles(limit) {
+    if (S.luminLoading && !S.luminLoaded) {
+      return Array(limit || 8).fill(null).map((_, i) => ({ _loading: true, id: 'sk' + i }));
+    }
+    if (S.luminLoaded && S.luminGames.length) {
+      return (limit ? S.luminGames.slice(0, limit) : S.luminGames).map(g => ({
+        id: g.id,
+        name: g.name,
+        meta: g.category || 'game',
+        live: true,
+        thumb: S.luminThumb[g.id] || null,
+        _lumin: true,
+      }));
+    }
+    return null; // caller falls back to static TILES
+  }
+
+  async function launchGame(id) {
+    if (!S.luminInst) { showToast('Game engine not ready'); return; }
+    try {
+      showToast('Loading game…');
+      const { url } = await S.luminInst.getGameUrl(id);
+      openBrowser(url, { direct: !S.proxyGames });
+    } catch (e) {
+      showToast('Could not load game');
+    }
+  }
+
+  // ── Proxy / UV ─────────────────────────────────────────────
+  async function initProxy() {
+    if (!('serviceWorker' in navigator)) {
+      S.browserStatusText = 'Service workers not supported';
+      return;
+    }
+    try {
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
+
+      // Set up bare-mux transport (epoxy v3 over the Railway bare server)
+      const { BareMuxConnection } = await import(
+        'https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@2.1.9/dist/index.mjs'
+      );
+      const conn = new BareMuxConnection(
+        'https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@2.1.9/dist/worker.js'
+      );
+      await conn.setTransport(
+        'https://cdn.jsdelivr.net/npm/@mercuryworkshop/epoxy-transport@3.0.1/dist/index.mjs',
+        [BARE_URL]
+      );
+
+      S.proxyReady = true;
+      S.browserStatusText = 'Proxy ready — enter a URL above';
+      if (S.browserOpen) updateBrowserStatus('idle', S.browserStatusText);
+    } catch (e) {
+      console.warn('[Agentiz] Proxy init failed:', e.message);
+      S.browserStatusText = 'Proxy unavailable — direct games still work';
+    }
+  }
+
+  function proxyEncode(rawUrl) {
+    if (!window.__uv$config) return rawUrl;
+    if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+      rawUrl = 'https://' + rawUrl;
+    }
+    return window.__uv$config.prefix + window.__uv$config.encodeUrl(rawUrl);
+  }
+
+  function openBrowser(rawUrl, opts = {}) {
+    if (!rawUrl) return;
+    if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+      rawUrl = 'https://' + rawUrl;
+    }
+    S.browserOpen = true;
+    S.browserHistory = [rawUrl];
+    S.browserHistoryIdx = 0;
+    S.browserUrl = rawUrl;
+    S.browserInputUrl = rawUrl;
+    S.browserStatus = 'loading';
+    S.browserStatusText = 'Connecting…';
+    renderBrowserOverlay();
+    // Navigate iframe
+    const iframe = document.getElementById('proxy-iframe');
+    if (!iframe) { setTimeout(() => navigateIframe(rawUrl, opts), 50); return; }
+    navigateIframe(rawUrl, opts);
+  }
+
+  function navigateIframe(rawUrl, opts = {}) {
+    const iframe = document.getElementById('proxy-iframe');
+    if (!iframe) return;
+    const direct = opts.direct || !S.proxyReady;
+    iframe.src = direct ? rawUrl : proxyEncode(rawUrl);
+    S.browserStatus = 'loading';
+    S.browserStatusText = direct ? 'Loading directly…' : 'Routing through proxy…';
+    updateBrowserStatus('loading', S.browserStatusText);
+  }
+
+  function browserGo(rawUrl) {
+    if (!rawUrl) return;
+    if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) rawUrl = 'https://' + rawUrl;
+    S.browserHistory = S.browserHistory.slice(0, S.browserHistoryIdx + 1);
+    S.browserHistory.push(rawUrl);
+    S.browserHistoryIdx = S.browserHistory.length - 1;
+    S.browserUrl = rawUrl;
+    S.browserInputUrl = rawUrl;
+    navigateIframe(rawUrl);
+    updateBrowserChrome();
+  }
+
+  function browserBack() {
+    if (S.browserHistoryIdx > 0) {
+      S.browserHistoryIdx--;
+      S.browserUrl = S.browserHistory[S.browserHistoryIdx];
+      S.browserInputUrl = S.browserUrl;
+      navigateIframe(S.browserUrl);
+      updateBrowserChrome();
+    }
+  }
+
+  function browserForward() {
+    if (S.browserHistoryIdx < S.browserHistory.length - 1) {
+      S.browserHistoryIdx++;
+      S.browserUrl = S.browserHistory[S.browserHistoryIdx];
+      S.browserInputUrl = S.browserUrl;
+      navigateIframe(S.browserUrl);
+      updateBrowserChrome();
+    }
+  }
+
+  function closeBrowser() {
+    S.browserOpen = false;
+    const overlay = document.getElementById('proxy-overlay');
+    if (overlay) {
+      overlay.classList.remove('open');
+      setTimeout(() => overlay.remove(), 300);
+    }
+  }
+
+  function updateBrowserChrome() {
+    const urlInput = document.getElementById('pb-url-input');
+    if (urlInput) urlInput.value = S.browserUrl;
+    const backBtn = document.getElementById('pb-back');
+    const fwdBtn  = document.getElementById('pb-forward');
+    if (backBtn) backBtn.disabled = S.browserHistoryIdx <= 0;
+    if (fwdBtn)  fwdBtn.disabled  = S.browserHistoryIdx >= S.browserHistory.length - 1;
+  }
+
+  function updateBrowserStatus(status, text) {
+    S.browserStatus = status;
+    S.browserStatusText = text;
+    const dot  = document.querySelector('#proxy-overlay .pb-status-dot');
+    const span = document.querySelector('#proxy-overlay .pb-status-text');
+    if (dot) { dot.className = 'pb-status-dot ' + (status === 'ok' ? 'ok' : status === 'loading' ? 'loading' : status === 'err' ? 'err' : ''); }
+    if (span) span.textContent = text;
   }
 
   // ── Toast ──────────────────────────────────────────────────
@@ -353,13 +680,20 @@
         <div class="grow"></div>
         <div class="icon">${I.panel(14)}</div>
       </div>
-      <div class="user">
-        <div class="user-avatar">A</div>
-        <div class="user-meta">
-          <div class="user-name">Agent Operator ${I.chevDown(12)}</div>
-          <div class="user-mail">operator@agentiz.local</div>
-        </div>
-      </div>
+      ${S.authUser
+        ? `<div class="user">
+            ${S.authUser.photoURL
+              ? `<img class="user-avatar" src="${esc(S.authUser.photoURL)}" style="object-fit:cover" referrerpolicy="no-referrer" alt="">`
+              : `<div class="user-avatar">${esc((S.authUser.displayName||S.authUser.email||'?')[0].toUpperCase())}</div>`}
+            <div class="user-meta">
+              <div class="user-name">${esc(S.authUser.displayName || 'Operator')} ${I.chevDown(12)}</div>
+              <div class="user-mail">${esc(S.authUser.email || '')}</div>
+            </div>
+            <button style="margin-left:auto;color:var(--ink-3);display:flex" data-action="auth-signout" title="Sign out">${I.x(14)}</button>
+          </div>`
+        : `<button class="sidebar-signin" data-action="auth-open">
+            ${I.lock(14)} Sign in to unlock Comms &amp; sync
+           </button>`}
       <div class="section-label">Workspace</div>
       <nav class="nav">${navGroup(NAV_PROJECTS)}</nav>
       <div class="section-label">Status</div>
@@ -494,23 +828,41 @@
 
         <!-- Quick play strip -->
         <div class="lobby-section-h">
-          <span>Quick play</span>
+          <span>Quick play${S.luminLoading ? ' <span style="font-size:10px;opacity:.5;font-weight:400">Loading…</span>' : ''}</span>
           <button class="card-action" data-action="go-catalog">See all ${I.arrow(12)}</button>
         </div>
         <div class="lobby-row">
-          ${featured.map(g => `
-            <button class="lobby-game" data-action="launch-item" data-name="${esc(g.name)}" data-meta="${esc(g.meta)}">
-              <div class="lobby-game-art">
-                <span class="lobby-game-glyph">${g.glyph}</span>
-                ${g.hot ? '<span class="lobby-game-hot">HOT</span>' : ''}
-              </div>
-              <div class="lobby-game-name">${esc(g.name)}</div>
-              <div class="lobby-game-meta">
-                <span>${esc(g.tag)}</span>
-                <span class="dotsep">·</span>
-                <span>${esc(g.plays)} plays</span>
-              </div>
-            </button>`).join('')}
+          ${(() => {
+            const live = luminTiles(4);
+            if (live) {
+              return live.map(g => g._loading
+                ? `<div class="lobby-game lumin-loading">
+                    <div class="lobby-game-art" style="background:var(--line)"></div>
+                    <div class="lobby-game-name" style="height:14px;background:var(--line);border-radius:4px;width:70%"></div>
+                    <div class="lobby-game-meta" style="height:10px;background:var(--line);border-radius:4px;width:50%"></div>
+                   </div>`
+                : `<button class="lobby-game" data-action="play-lumin" data-id="${esc(g.id)}">
+                    <div class="lobby-game-art${g.thumb?' has-img':''}" ${g.thumb?`style="background-image:url('${g.thumb}')"`:''}>
+                      ${g.thumb ? '' : `<span class="lobby-game-glyph">▦</span>`}
+                    </div>
+                    <div class="lobby-game-name">${esc(g.name)}</div>
+                    <div class="lobby-game-meta">${esc(g.meta)}</div>
+                   </button>`
+              ).join('');
+            }
+            // Static fallback
+            return featured.map(g => `
+              <button class="lobby-game" data-action="launch-item" data-name="${esc(g.name)}" data-meta="${esc(g.meta)}">
+                <div class="lobby-game-art">
+                  <span class="lobby-game-glyph">${g.glyph}</span>
+                  ${g.hot ? '<span class="lobby-game-hot">HOT</span>' : ''}
+                </div>
+                <div class="lobby-game-name">${esc(g.name)}</div>
+                <div class="lobby-game-meta">
+                  <span>${esc(g.tag)}</span><span class="dotsep">·</span><span>${esc(g.plays)} plays</span>
+                </div>
+              </button>`).join('');
+          })()}
         </div>
 
         <!-- Proxy picker + Friends -->
@@ -600,14 +952,30 @@
 
   function viewCatalog() {
     const titleMap = { proxies:'Proxies', games:'Games Library', utils:'Utilities', config:'Configuration' };
-    const title = titleMap[S.tree] || (S.tree.charAt(0).toUpperCase() + S.tree.slice(1));
-    const items = TILES[S.tree] || TILES.proxies;
-    const tabs = ['All','Live','Drafts','Shared'];
+    const isGames  = ['games','arcade','puzzle','classic'].includes(S.tree) || S.tree === 'library';
+    const title    = titleMap[S.tree] || (S.tree.charAt(0).toUpperCase() + S.tree.slice(1));
+    const tabs     = ['All','Live','Drafts','Shared'];
+
+    // Use Lumin data for game-related trees
+    const luminData = isGames ? luminTiles(null) : null;
+    const items = luminData || TILES[S.tree] || TILES.proxies;
+    const subtitle = luminData
+      ? `${S.luminGames.length} games · page ${S.luminPage} of ${S.luminPages}`
+      : `${items.length} items · last sync 2 min ago`;
+
+    // Page controls for Lumin
+    const pageBar = luminData && S.luminPages > 1 ? `
+      <div class="catalog-pagination">
+        <button class="page-btn" ${S.luminPage<=1?'disabled':''} data-action="lumin-page" data-val="${S.luminPage-1}">← Prev</button>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-3)">${S.luminPage} / ${S.luminPages}</span>
+        <button class="page-btn" ${S.luminPage>=S.luminPages?'disabled':''} data-action="lumin-page" data-val="${S.luminPage+1}">Next →</button>
+      </div>` : '';
+
     return `<main class="main">
       <div class="main-head">
         <div>
           <div class="main-title">${esc(title)}</div>
-          <div class="main-sub">${items.length} items · last sync 2 min ago</div>
+          <div class="main-sub">${subtitle}</div>
         </div>
         <div class="main-head-actions">
           <button class="btn">${I.filter(14)} Filter</button>
@@ -617,50 +985,51 @@
       <div class="tabs">
         ${tabs.map(t => `<div class="tab ${S.catalogTab===t?'active':''}" data-action="catalog-tab" data-val="${t}">${t}</div>`).join('')}
       </div>
+      ${isGames ? `<div class="catalog-search">${I.search(14)}<input id="catalog-search-inp" placeholder="Search games…" value="${esc(S.luminSearch)}"></div>` : ''}
       <div class="tile-grid">
-        ${items.map(t => `
-          <div class="tile" data-action="launch-item" data-name="${esc(t.name)}" data-meta="${esc(t.meta)}">
-            <div class="tile-thumb">${I.cube(28, 1.2)}</div>
-            <div class="tile-name">${esc(t.name)}</div>
-            <div class="tile-meta">${esc(t.meta)}</div>
-            <div class="tile-status ${t.live?'live':''}">
-              <span class="led"></span>${t.live ? 'online' : 'ready'}
-            </div>
-          </div>`).join('')}
-        <div class="tile" style="justify-content:center;align-items:center;color:var(--ink-3)">
-          ${I.plus(20)}
-          <div class="tile-name" style="color:var(--ink-3);font-weight:500">Add new</div>
-        </div>
+        ${items.map(t => t._loading
+          ? `<div class="tile lumin-loading">
+              <div class="tile-thumb"></div>
+              <div class="tile-name">Loading</div>
+              <div class="tile-meta">—</div>
+              <div class="tile-status"></div>
+             </div>`
+          : t._lumin
+          ? `<div class="tile" data-action="play-lumin" data-id="${esc(t.id)}">
+              <div class="tile-thumb${t.thumb?' has-img':''}" ${t.thumb?`style="background-image:url('${t.thumb}')"`:''}>
+                ${t.thumb ? '' : I.cube(28,1.2)}
+              </div>
+              <div class="tile-name">${esc(t.name)}</div>
+              <div class="tile-meta">${esc(t.meta)}</div>
+              <div class="tile-status live"><span class="led"></span>online</div>
+             </div>`
+          : `<div class="tile" data-action="launch-item" data-name="${esc(t.name)}" data-meta="${esc(t.meta||'')}">
+              <div class="tile-thumb">${I.cube(28, 1.2)}</div>
+              <div class="tile-name">${esc(t.name)}</div>
+              <div class="tile-meta">${esc(t.meta||'')}</div>
+              <div class="tile-status ${t.live?'live':''}"><span class="led"></span>${t.live?'online':'ready'}</div>
+             </div>`
+        ).join('')}
+        ${!luminData ? `<div class="tile" style="justify-content:center;align-items:center;color:var(--ink-3)">${I.plus(20)}<div class="tile-name" style="color:var(--ink-3);font-weight:500">Add new</div></div>` : ''}
       </div>
+      ${pageBar}
     </main>`;
   }
 
   function viewGate() {
-    const errEl = S.gateErr ? `<div class="gate-err">Both fields are required to enter the network.</div>` : '';
     return `<main class="main gate">
-      <div class="gate-card" id="gate-card">
+      <div class="gate-card">
         <div class="gate-lock">${I.lock(28, 1.4)}</div>
         <div class="gate-status locked"><span class="led"></span> ACCESS · RESTRICTED</div>
         <h2 class="gate-title">Communications Network</h2>
         <p class="gate-body">
-          Sign in to reach friends, share rooms, and queue sessions together.
-          The network stays closed to anonymous traffic — no account, no entry.
+          Sign in with your Agentiz account to reach friends, share rooms, and queue sessions together.
+          The network stays closed to anonymous traffic.
         </p>
-        <form class="gate-form" id="gate-form">
-          <label class="gate-field">
-            <span>Handle</span>
-            <input id="gate-user" placeholder="@yourhandle" value="${esc(S.gateUser)}" autocomplete="off">
-          </label>
-          <label class="gate-field">
-            <span>Passphrase</span>
-            <input id="gate-pass" type="password" placeholder="••••••••" value="${esc(S.gatePass)}">
-          </label>
-          ${errEl}
-          <div class="gate-actions">
-            <button type="button" class="btn">Request invite</button>
-            <button type="submit" class="btn btn-primary">${I.arrow(14)} Sign in</button>
-          </div>
-        </form>
+        <div class="gate-actions" style="margin-top:6px">
+          <button class="btn" data-action="auth-open">Request invite</button>
+          <button class="btn btn-primary" data-action="auth-open">${I.arrow(14)} Sign in</button>
+        </div>
         <div class="gate-foot">
           <span>${I.shield(12)} End-to-end · sandboxed · no telemetry</span>
         </div>
@@ -1020,6 +1389,17 @@
         </section>
 
         <section class="settings-section">
+          <div class="settings-section-h">Games</div>
+          <div class="settings-row">
+            <div class="settings-row-meta">
+              <div class="settings-row-h">Proxy games <span class="proxy-games-badge">Beta</span></div>
+              <div class="settings-row-d">Route game traffic through Ultraviolet when games are blocked on your network. Direct is faster — only enable if needed.</div>
+            </div>
+            <div class="toggle ${S.proxyGames?'on':''}" data-action="toggle-proxy-games"></div>
+          </div>
+        </section>
+
+        <section class="settings-section">
           <div class="settings-section-h">Sessions</div>
           <div class="settings-row">
             <div class="settings-row-meta">
@@ -1084,6 +1464,129 @@
     </main>`;
   }
 
+  // ── Browser overlay ───────────────────────────────────────
+  function renderBrowserOverlay() {
+    let el = document.getElementById('proxy-overlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'proxy-overlay';
+      el.className = 'proxy-overlay';
+      document.getElementById('app').appendChild(el);
+      // Wire iframe load events after insertion
+      setTimeout(() => {
+        const iframe = document.getElementById('proxy-iframe');
+        if (!iframe) return;
+        iframe.addEventListener('load', () => {
+          updateBrowserStatus('ok', S.proxyReady ? `Proxied via Railway` : 'Direct connection');
+          updateBrowserChrome();
+        });
+        iframe.addEventListener('error', () => {
+          updateBrowserStatus('err', 'Failed to load page');
+        });
+      }, 100);
+    }
+    const canBack    = S.browserHistoryIdx > 0;
+    const canForward = S.browserHistoryIdx < S.browserHistory.length - 1;
+    const dotCls     = S.browserStatus === 'ok' ? 'ok' : S.browserStatus === 'loading' ? 'loading' : S.browserStatus === 'err' ? 'err' : '';
+    el.innerHTML = `
+      <div class="pb-chrome">
+        <div class="pb-nav">
+          <button id="pb-back" ${canBack?'':'disabled'} data-action="browser-back" title="Back">
+            ${I.chev(16, 2)}
+          </button>
+          <button id="pb-forward" ${canForward?'':'disabled'} data-action="browser-forward" title="Forward" style="transform:scaleX(-1)">
+            ${I.chev(16, 2)}
+          </button>
+          <button data-action="browser-refresh" title="Refresh">
+            ${I.hist(16)}
+          </button>
+        </div>
+        <div class="pb-urlbar">
+          <span class="pb-lock">${I.lock(13, 1.4)}</span>
+          <input id="pb-url-input" value="${esc(S.browserUrl)}" placeholder="Enter a URL or search…" spellcheck="false">
+          <button class="pb-go" data-action="browser-go">Go</button>
+        </div>
+        <div class="pb-actions">
+          <button data-action="browser-new" title="New tab (opens in Agentiz)">${I.plus(16)}</button>
+          <button data-action="browser-close" title="Close">${I.x(16)}</button>
+        </div>
+      </div>
+      ${S.browserUrl
+        ? `<iframe id="proxy-iframe" class="pb-frame" referrerpolicy="no-referrer" allow="autoplay; fullscreen; gamepad; pointer-lock"></iframe>`
+        : `<div class="pb-splash">
+            <div class="pb-splash-icon">${I.globe(28, 1.2)}</div>
+            <div class="pb-splash-h">New Tab</div>
+            <div class="pb-splash-sub">${esc(S.browserStatusText)}</div>
+          </div>`}
+      <div class="pb-status">
+        <span class="pb-status-dot ${dotCls}"></span>
+        <span class="pb-status-text">${esc(S.browserStatusText)}</span>
+        ${S.proxyReady ? `<span style="margin-left:auto">Ultraviolet · ${BARE_URL.replace('wss://','').split('/')[0]}</span>` : ''}
+      </div>`;
+    // Animate open on next frame
+    requestAnimationFrame(() => el.classList.add('open'));
+    // Navigate iframe if we have a URL
+    if (S.browserUrl) {
+      setTimeout(() => navigateIframe(S.browserUrl), 80);
+    }
+  }
+
+  // ── Auth modal ─────────────────────────────────────────────
+  function renderAuthModal() {
+    let el = document.getElementById('auth-overlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'auth-overlay';
+      document.getElementById('app').appendChild(el);
+    }
+    if (!S.authModal) { el.innerHTML = ''; return; }
+
+    const isSignUp = S.authTab === 'signup';
+    el.innerHTML = `
+      <div class="auth-overlay">
+        <div class="auth-card">
+          <button class="auth-close" data-action="auth-close">${I.x(14)}</button>
+          <div class="auth-eyebrow"><span class="dot"></span> AGENTIZ · NETWORK ACCESS</div>
+          <h2 class="auth-title">Sign in to continue</h2>
+          <p class="auth-body">Connect to the Communications Network, sync your settings, and save your workspace across devices.</p>
+
+          <button class="auth-google-btn" data-action="auth-google">
+            <svg class="auth-google-icon" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <div class="auth-divider">or</div>
+
+          <div class="auth-tabs">
+            <div class="auth-tab ${S.authTab==='signin'?'active':''}" data-action="auth-tab" data-val="signin">Sign in</div>
+            <div class="auth-tab ${S.authTab==='signup'?'active':''}" data-action="auth-tab" data-val="signup">Create account</div>
+          </div>
+
+          <div class="auth-form" id="auth-form">
+            <div class="auth-field">
+              <label>Email</label>
+              <input id="auth-email" type="email" placeholder="you@example.com" value="${esc(S.authEmail)}" autocomplete="email">
+            </div>
+            <div class="auth-field">
+              <label>Password</label>
+              <input id="auth-pass" type="password" placeholder="••••••••" autocomplete="${isSignUp ? 'new-password' : 'current-password'}">
+            </div>
+            ${S.authErr ? `<div class="auth-err">${esc(S.authErr)}</div>` : ''}
+            <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" data-action="auth-submit">
+              ${I.arrow(14)} ${isSignUp ? 'Create account' : 'Sign in'}
+            </button>
+          </div>
+
+          <div class="auth-foot">${I.shield(12)} End-to-end · no ads · no telemetry</div>
+        </div>
+      </div>`;
+  }
+
   // ── Main render ────────────────────────────────────────────
   function render() {
     // Rail
@@ -1097,7 +1600,12 @@
     if (S.rail === 'logo') {
       html = viewWelcome();
     } else if (S.rail === 'globe') {
-      html = S.commsUser ? viewComms() : viewGate();
+      if (S.authUser) {
+        if (!S.commsUser) S.commsUser = { name: S.authUser.displayName || S.authUser.email.split('@')[0] };
+        html = viewComms();
+      } else {
+        html = viewGate();
+      }
     } else if (S.rail === 'spark') {
       html = viewAgeniuz();
     } else if (S.rail === 'share') {
@@ -1114,6 +1622,7 @@
     }
 
     view.innerHTML = html;
+    renderAuthModal();
     afterRender();
   }
 
@@ -1296,11 +1805,14 @@
 
       case 'sb-launch': {
         const preset = SANDBOX_PRESETS.find(p => p.id === S.sbPreset) || SANDBOX_PRESETS[0];
-        const target = S.sbUrl.trim() || 'homepage';
+        const target = S.sbUrl.trim();
+        if (!target) { showToast('Enter a URL first'); break; }
         S.sbRunning.unshift({ id: 's' + Date.now(), name: preset.name, host: preset.region, up: 'now', url: target });
         S.sbUrl = '';
         showToast(`${preset.name} sandbox launched`);
         render();
+        // Open in browser overlay
+        openBrowser(target);
         break;
       }
 
@@ -1344,6 +1856,78 @@
         S.sbRunning = [];
         S.commsUser = null;
         showToast('Workspace wiped');
+        render();
+        break;
+
+      // ── Auth ──────────────────────────────────────────────
+      case 'auth-open':
+        S.authModal = true;
+        S.authErr = '';
+        renderAuthModal();
+        break;
+
+      case 'auth-close':
+        S.authModal = false;
+        renderAuthModal();
+        break;
+
+      case 'auth-tab':
+        S.authTab = val;
+        S.authErr = '';
+        renderAuthModal();
+        break;
+
+      case 'auth-google':
+        authWithGoogle();
+        break;
+
+      case 'auth-submit':
+        authWithEmail(S.authTab === 'signup');
+        break;
+
+      case 'auth-signout':
+        authSignOut();
+        break;
+
+      // ── Browser / proxy ────────────────────────────────────
+      case 'browser-back':    browserBack(); break;
+      case 'browser-forward': browserForward(); break;
+
+      case 'browser-refresh': {
+        const iframe = document.getElementById('proxy-iframe');
+        if (iframe) iframe.src = iframe.src;
+        break;
+      }
+
+      case 'browser-go': {
+        const urlInput = document.getElementById('pb-url-input');
+        browserGo(urlInput ? urlInput.value : S.browserUrl);
+        break;
+      }
+
+      case 'browser-new':
+        S.browserUrl = '';
+        S.browserInputUrl = '';
+        renderBrowserOverlay();
+        break;
+
+      case 'browser-close':
+        closeBrowser();
+        break;
+
+      // ── Lumin games ────────────────────────────────────────
+      case 'play-lumin':
+        launchGame(btn.dataset.id);
+        break;
+
+      case 'lumin-page':
+        loadLuminGames(parseInt(val, 10), S.luminQuery);
+        break;
+
+      // ── Sandbox launch → open in proxy browser ─────────────
+      case 'toggle-proxy-games':
+        S.proxyGames = !S.proxyGames;
+        saveUserSettings();
         render();
         break;
     }
@@ -1449,14 +2033,48 @@
       S.sbUrl = val;
       return;
     }
+    if (id === 'pb-url-input') {
+      S.browserInputUrl = val;
+      return;
+    }
+    if (id === 'auth-email') {
+      S.authEmail = val;
+      return;
+    }
+    if (id === 'auth-pass') {
+      S.authPassword = val;
+      return;
+    }
+    if (id === 'catalog-search-inp') {
+      S.luminSearch = val;
+      return;
+    }
   });
 
-  // ── Keyboard shortcut: ⌘/Ctrl+K → focus sidebar search ───
+  // ── Keyboard shortcuts ─────────────────────────────────────
   document.addEventListener('keydown', (e) => {
+    // ⌘/Ctrl+K → sidebar search
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
       const inp = document.getElementById('sidebar-search');
       if (inp) inp.focus();
+      return;
+    }
+    // Enter in browser URL bar → navigate
+    if (e.key === 'Enter' && e.target.id === 'pb-url-input') {
+      browserGo(e.target.value);
+      return;
+    }
+    // Enter in catalog search → Lumin search
+    if (e.key === 'Enter' && e.target.id === 'catalog-search-inp') {
+      S.luminQuery = e.target.value;
+      loadLuminGames(1, S.luminQuery);
+      return;
+    }
+    // Escape → close browser overlay or auth modal
+    if (e.key === 'Escape') {
+      if (S.browserOpen) { closeBrowser(); return; }
+      if (S.authModal) { S.authModal = false; renderAuthModal(); return; }
     }
   });
 
@@ -1468,7 +2086,21 @@
   }
 
   // ── Boot ───────────────────────────────────────────────────
+  // Set up UV config in main thread (uv.bundle.js must be loaded first)
+  if (window.Ultraviolet) {
+    window.__uv$config = {
+      prefix: '/uv/',
+      encodeUrl: Ultraviolet.codec.xor.encode,
+      decodeUrl: Ultraviolet.codec.xor.decode,
+    };
+  }
+
   applyTheme();
   render();
+
+  // Async inits — run in background after first render
+  initFirebase();
+  initProxy();
+  initLumin();
 
 })();
