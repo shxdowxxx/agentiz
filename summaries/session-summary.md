@@ -1,61 +1,60 @@
 ---
-session_id: SIZ-20260507-1200
+session_id: SIZ-20260507-1600
 date: 2026-05-07
-time: 12:00 UTC
+time: 16:00 UTC
 project: Agentiz
 agent: SessionCloseoutAgent
 version: 1.0
-current_phase: Phase 3 — Frontend Complete, Proxy + Auth Integrated
+current_phase: Phase 4 — Dark UI Overhaul, Fake Data Purge, S3 Deployed
 related_files:
   - summaries/session-summary.md
   - context/claude.md
   - context/gemini.md
   - context/project-state.md
-github_commit: 2c979c5
+github_commit: pending
 ---
 
-# Session Summary — 2026-05-07
+# Session Summary — 2026-05-07 (SIZ-20260507-1600)
 
 ## Director's Vision
-Rebuild Agentiz from a clean slate (post-wipe) as a polished, production-grade vanilla HTML/CSS/JS SPA. Use a Claude Design mockup as the visual reference. Wire in a working proxy engine (Ultraviolet v3 + epoxy-transport v3.0.1), a live games catalog (Lumin SDK), and Firebase authentication — all without any framework or build step.
+Transform Agentiz from a light-gray corporate dashboard with fake placeholder data into a real, dark-themed proxy/games site that students can actually use. Strip every vestige of mock content, install a genuine activity log, add school-evasion features (tab cloak, panic key), and ship it to S3.
 
 ## Decisions Made
-1. Stack is vanilla HTML/CSS/JS — no React, no Vite, no build step. Browser-runnable directly (proxy requires HTTPS).
-2. Proxy engine: Ultraviolet v3.2.10 from jsDelivr. Not Scramjet — Scramjet requires a Rust/WASM build pipeline that is incompatible with a no-build-step approach.
-3. Transport: epoxy-transport v3.0.1 (not v2 or the KoopBin fork) — v3 fixes the `headers is not iterable` bug that broke Phase 2.
-4. bare-mux v2.1.9 — upgraded from 2.1.6 to stay in sync with epoxy v3.
-5. Games load directly (not proxied) by default. "Proxy games" toggle in Settings sends game URLs through the proxy overlay.
-6. Firebase project `agentiz-b18ad` (separate from `thesiznexus`) handles auth and settings sync.
-7. Deployment target: S3 bucket `agentiz` (us-east-1) + Railway bare server. GitHub Pages is also live as a fallback.
-8. Proxy navigation always goes through a slide-in browser overlay (full-page iframe), never `window.location.href` — preserves the lesson from Phase 2.
+1. Default theme is dark (`#0d0d0d` base, silver/white text). Light mode is a toggle, not the default.
+2. All fake data is permanently removed — no friends lists, no fake proxy servers, no fake logs, no fictional credits engineers.
+3. View count reduced from 9 to 6: Home, Proxy, Games, AI (Ageniuz), Log, Settings. Sandbox, Welcome, Catalog, Comms, Credits views dropped.
+4. Proxy rendered as an inline rail view, not a floating overlay.
+5. Tab cloak targets four real school platforms with real favicons: Google Docs, Khan Academy, Google Classroom, Schoology.
+6. Panic key is Escape — closes proxy view instantly.
+7. Activity log starts empty and populates only with real events via `logEvent()`.
+8. Credits rewritten with real attributions: ItzzzShxdow (vision/product), Claude/TheSizCorporation (engineering), Lumin SDK (games), Ultraviolet/TitaniumNetwork (proxy), Mercury Workshop/Railway (bare server).
+9. Deployment target remains AWS S3 (`agentiz`, us-east-1). Content types corrected for .css, .js, .html, sw.js.
 
 ## Work Completed
-- **Commit `337479b`**: Full frontend SPA built from Claude Design mockup. 3 files: `index.html`, `style.css` (~1372 lines), `app.js` (~1368 lines). 9 interactive views: Welcome, Lobby/Dashboard, Catalog, Communications, Ageniuz AI, Activity Log, Sandbox, Settings, Credits.
-- **Commit `2911203`**: Dark mode applied across the entire app; Dashboard redesigned as "Lobby" with featured hero game, quick-play strip, proxy picker with ping bars, friends panel, recent sessions, and what's new section.
-- **Commit `ba7f14b`**: Comprehensive dark mode audit. Root cause fixed: `.app` had no `color` set, causing text to inherit from `:root` via `body`. Eight distinct issues resolved: title text, compose bars, unread badge, border color, count pills, icon hovers, scrollbars, and more.
-- **Commit `2c979c5`**: Three live systems integrated: (1) Proxy — `sw.js` with UV v3.2.10 + epoxy-transport v3.0.1 + bare-mux v2.1.9 → Railway bare server. Slide-in overlay with chrome bar, URL history, status indicator. (2) Games — Lumin SDK from jsDelivr. Live catalog, thumbnails, search, pagination. (3) Firebase Auth — Google + email/password sign-in, Settings sync to Firestore.
+- **style.css**: Full rewrite — 1435 lines. Dark theme as default. `body.light` class toggles light mode. All fake UI sections removed. New pill proxy URL bar, tab cloak button styles, panic overlay, activity log, simplified sidebar (6 items).
+- **app.js**: Full rewrite — 1377 lines. Removed: `FRIENDS`, `REQUESTS`, `LOG_ENTRIES`, `SANDBOX_PRESETS`, `TILES`, `TREE`, `CREDITS_DATA`, `NAV_STATUS`, `NAV_HISTORY` arrays. Added: `CLOAK_PRESETS` (4 real combos with real favicon URLs), `logEvent(kind, lvl, text)` function, `applyCloak()`/`clearCloak()` functions, Escape key panic handler, real proxy URL bar on Home view.
+- **S3 deployment**: `deploy.sh` run. Files uploaded to S3 bucket `agentiz` (us-east-1, account 329435595007). Content types set correctly. Live at `https://agentiz.s3.amazonaws.com/agentiz/index.html`.
 
 ## Current State
-The Agentiz frontend is complete and the three core systems (proxy, games, Firebase auth) are all integrated. The app is committed and pushed to `shxdowxxx/agentiz` main at `2c979c5`. It has not been tested end-to-end in a browser — proxy requires HTTPS, which means testing must happen via S3 or GitHub Pages, not `file://`. S3 has not been deployed this session. Firestore security rules for the `users` collection are not yet written. The friends/comms system uses static mock data.
+Agentiz is a functional dark-themed proxy/games site. The Lumin games catalog works. The proxy engine (UV v3 + epoxy-transport v3.0.1 + bare-mux v2.1.9 → Railway bare server) is wired and deployed but has not been manually tested end-to-end in a browser this session. Tab cloak and panic key are implemented. Activity log populates in real time on use. The app is live on S3 at HTTPS, so proxy testing can happen immediately.
 
 ## Blockers & Challenges
-- **Proxy untested**: Service worker + UV stack is wired correctly based on Phase 2 lessons, but no browser test has been done to confirm proxy requests route successfully through the Railway bare server.
-- **Firestore rules missing**: The `users` collection is read/written by Settings sync code but no security rules have been authored for `agentiz-b18ad`.
-- **Static mock data in Comms**: Friends list, DMs, and the friends panel in Lobby are all hardcoded. A real Firebase-backed comms system is a Phase 4 item.
-- **S3 not deployed**: `deploy.sh` has not been run this session. S3 bucket `agentiz` still has the content from before the Phase 2 wipe (or is empty — state unknown).
+- **Proxy untested end-to-end**: S3 is HTTPS so the service worker should register correctly, but no manual browser test was completed this session. If proxy returns errors, check Railway bare server health first, then SW registration timing, then epoxy-transport import path.
+- **Firestore security rules not written**: `agentiz-b18ad` `users` collection is read/written by Settings sync but has no security rules. This is a pre-launch blocker for auth.
+- **Tab cloak favicons load from external CDNs**: Google, Khan Academy, Google Classroom, Schoology favicons fetched from their own domains. If those domains are blocked on the school network, the cloak favicon will fail silently (title still changes). Could cache as data URIs in a future session.
+- **Comms feature removed**: Real-time messaging is gone. Could be rebuilt with Firebase Realtime Database in a later phase if the director wants it.
 
 ## Next Steps
-1. Test proxy in browser — deploy to S3 via `deploy.sh` or use GitHub Pages (HTTPS required).
-2. Write Firestore security rules for the `users` collection in `agentiz-b18ad`.
-3. If proxy returns 500s, check: (a) Railway bare server health, (b) `sw.js` registration timing, (c) epoxy-transport v3 import path in the CDN URL.
-4. Build real friends/comms system using Firebase Realtime Database or Firestore.
-5. Run `deploy.sh` to sync files to S3.
+1. Open `https://agentiz.s3.amazonaws.com/agentiz/index.html` in a browser and test the proxy end-to-end (enter a URL, confirm it loads through the proxy view).
+2. Write Firestore security rules for `agentiz-b18ad` `users/{uid}` collection (authenticated user can read/write their own doc only).
+3. If proxy 500s: check Railway bare server at `https://balanced-amazement-production-c715.up.railway.app/` directly, then inspect SW console for epoxy-transport import errors.
+4. Optionally cache tab cloak favicons as data URIs in `CLOAK_PRESETS` to prevent CDN-blocked favicon failures.
+5. Consider a real Comms rebuild using Firebase Realtime Database if director wants that feature back.
 
 ## Notes
-- UV v3.2.10 from jsDelivr: `https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.10/dist/`
-- epoxy-transport v3.0.1 from jsDelivr: `https://cdn.jsdelivr.net/npm/epoxy-transport@3.0.1/dist/`
-- bare-mux v2.1.9 from jsDelivr: `https://cdn.jsdelivr.net/npm/bare-mux@2.1.9/dist/`
-- Railway bare server: `https://balanced-amazement-production-c715.up.railway.app/`
+- S3 live URL: `https://agentiz.s3.amazonaws.com/agentiz/index.html`
+- Railway bare server: `https://balanced-amazement-production-c715.up.railway.app/` — do not delete
 - Firebase project: `agentiz-b18ad`
-- S3 bucket: `agentiz` (us-east-1, account 329435595007)
 - GitHub repo: `shxdowxxx/agentiz`, branch `main`
+- AWS account: 329435595007
+- Filter status (measured 2026-05-05 on S3 domain): Lightspeed=Education, FortiGuard=IT, Palo Alto=Computer-and-Internet-Info, Cisco Umbrella=Cloud and Data Centers, Securly=Other, AristotleK12=Allowed, ContentKeeper=Allowed, GoGuardian=Uncategorized (blocked — no technical fix)
